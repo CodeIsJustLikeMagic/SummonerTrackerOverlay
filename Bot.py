@@ -2,13 +2,11 @@
 from PyQt5.QtGui import QFont, QIcon, QColor
 from PyQt5.QtWidgets import QApplication, QLabel, QDialog, QVBoxLayout, QSystemTrayIcon, QMenu, QDesktopWidget, \
     QGraphicsDropShadowEffect
-from PyQt5.QtCore import Qt, pyqtSignal, QObject, QTimer, QCoreApplication
+from PyQt5.QtCore import Qt, pyqtSignal, QObject, QTimer
 import paho.mqtt.client as mqtt
 import threading
-import lcu_connector_python as lcu
 from numpy import unicode
-import numpy as np
-
+import os
 
 class Communicate(QObject):
     text = pyqtSignal(str)
@@ -35,17 +33,20 @@ class MainWindow(QDialog):
         effect.setColor(QColor(0,0,0,255))
         effect.setOffset(1)
         self.l.setGraphicsEffect(effect)
+
         c.text.connect(lambda m: self.l.setText(m))
         layout.addWidget(self.l)
         self.setFocusPolicy(Qt.NoFocus)
         self.ismovable = False
         self.l.setStyleSheet("color: rgb(230,230,230)")
-        trayIcon = QSystemTrayIcon(QIcon("trackerIcon.xpm"), self)
+        icon = QIcon("trackerIcon.xpm")
+        trayIcon = QSystemTrayIcon(icon, self)
+        self.setWindowIcon(icon)
         menu = QMenu()
         exitAction = menu.addAction("Exit")
-        exitAction.triggered.connect(lambda: QCoreApplication.exit())
+        exitAction.triggered.connect(self.close)
         moveAction = menu.addAction("Move")
-        moveAction.triggered.connect(lambda: self.movable())
+        moveAction.triggered.connect(self.movable)
         resetPosAction = menu.addAction("Reset Position")
         resetPosAction.triggered.connect(self.resetPos)
         showmqttInfoAction= menu.addAction("show mqtt info")
@@ -53,21 +54,35 @@ class MainWindow(QDialog):
         showmqttInfoAction.triggered.connect(lambda : c.text.emit(connectionInfo))
         newConnection = menu.addAction('new Connection')
         newConnection.triggered.connect(renonnectmqtt)
+        #self.aboutToQuit(disconnectmqtt())
 
+        postxtdir = os.path.join(os.getenv('APPDATA'),"SummonerTrackerOverlay")
+        self.postxtfilepath = os.path.join(postxtdir,"pos.txt")
+        try:
+            os.mkdir(postxtdir)
+        except: FileExistsError
+
+        import ctypes
+        myappid = 'summonerTrackerOverlay'  # arbitrary string
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 
         trayIcon.setContextMenu(menu)
         trayIcon.show()
 
         self.show()
         try:
-            with open("pos.txt") as f:
+            with open(self.postxtfilepath) as f:
                 pos = f.read()
                 pos = pos.split(' ')
                 if len(pos) == 2:
-                    print('move')
+                    print('moving overlay to position from appdata file')
                     self.move(int(int(pos[0]) / 2), int(int(pos[1]) / 2))
         except FileNotFoundError:
             print('no position file')
+    def closeEvent(self, event) -> None:
+        print('close Overlay')
+        disconnectmqtt()
+        event.accept()
 
     def resetPos(self):
         centerPoint = QDesktopWidget().availableGeometry().center()
@@ -82,7 +97,7 @@ class MainWindow(QDialog):
 
     def savePosition(self):
         newPos = self.mapToGlobal(self.pos())
-        f = open("pos.txt", "w")
+        f = open(self.postxtfilepath, "w")
         f.write(str(newPos.x()) + ' ' + str(newPos.y()))
         f.close()
 
@@ -91,12 +106,12 @@ class MainWindow(QDialog):
         print('moveable')
         self.setAttribute(Qt.WA_TranslucentBackground, on=False)
         self.setAutoFillBackground(False)
-        self.l.setStyleSheet("border: 3px solid white; color : white")
+        self.l.setStyleSheet("border: 3px solid white; color: rgb(230,230,230)")
 
     def unmovable(self):
         print('unmovable')
         self.ismovable = False
-        self.l.setStyleSheet("border: none; color : white")
+        self.l.setStyleSheet("border: none; color: rgb(230,230,230)")
 
     def visibleIfNoMouse(self):
         if self.l.underMouse() is False:
@@ -135,27 +150,27 @@ def on_message(client,userdata,message):
     message = message.payload.decode("utf-8")
     message = message.replace(', ', '\n')
     message = message.replace(',', '')
-    print('revieced message', message)
     c.text.emit(message)
 
 def loadTopicsuffix():
+    print('loading topic suffix and clientId from aktive game api')
 
     # api_connection_data = lcu.connect("D:/Program/RiotGames/LeagueOfLegends")
     try:
         r = requests.get("https://127.0.0.1:2999/liveclientdata/playerlist", verify=False)
     except Exception as e:
-        print('catch error')
+        print('catch error during loading from api')
         print(e)
         return None,None
     activeplayer = requests.get("https://127.0.0.1:2999/liveclientdata/activeplayername", verify = False)
     activeplayer = json.loads(activeplayer.content)
     j = json.loads(r.content)
-    print(j)
+    #print(j)
     li = np.array([])
     for player in j:
         li = np.append(li, player.get("summonerName", ""))
     topic = str(hashNames(li))
-    print(topic)
+    #print(topic)
     return topic, str(java_string_hashcode(activeplayer))
 
 connectionInfo = 'will connect once game starts'
@@ -176,6 +191,7 @@ def mqttclient():
     global connectionInfo
     connectionInfo = 'topic ' + topic + '\nclient id '+clientID
     c.text.emit('connected\n'+connectionInfo)
+    print('mqtt connected.')
     client.subscribe(topic)
     client.loop_start()
     global clientHolder
@@ -184,8 +200,11 @@ def mqttclient():
     c.text.emit('')
 def disconnectmqtt():
     global clientHolder
-    clientHolder.disconnect()
+    if clientHolder is not None:
+        print('disconnecting mqtt')
+        clientHolder.disconnect()
 def renonnectmqtt():
+    print('reconnecting')
     disconnectmqtt()
     mqttclient()
 def java_string_hashcode(s):
@@ -222,29 +241,41 @@ tries = 1
 def dismaldiesmaldiesmal(s):
     global activeGameFound
     global tries
+    sleeptime = 20
     #print('activeGameFound', activeGameFound)
     try:
-        print('activeGame Try')
+        print('game Aktive:', activeGameFound)
+        print('looking for aktive game')
         then = time.time()
         r = s.get("https://127.0.0.1:2999/help", verify = False)
-
-        if activeGameFound is False:
+        print('checking port 2999',r)
+        sleeptime = 60
+        if activeGameFound is False: # new game found
+            #check is still in loading screen
+            r = requests.get("https://127.0.0.1:2999/liveclientdata/activeplayername", verify=False)
+            print('checking if in loading screen',r)
+            if r.status_code != 200:
+                c.text.emit('loading screen')
+                print('loading screen')
+                time.sleep(15)
+                dismaldiesmaldiesmal(s)
+                return
             activeGameFound = True
             mqttclient()
             tries = 1
     except Exception as e:
-        print('exception: no active game, tries '+ str(tries))
+        print('exception: no active game, tries '+ str(tries), e)
         if tries >= 2 :
             c.text.emit('')
         else :
             c.text.emit('no active game found')
-            print('disconnectmqtt')
         if activeGameFound:
+            print('disconnect previous mqtt connection')
             disconnectmqtt()
         tries = tries +1
         activeGameFound = False
     #print(time.time() - then)
-    time.sleep(20)
+    time.sleep(sleeptime)
     dismaldiesmaldiesmal(s)
 def gameStart():
     s = requests.Session()
