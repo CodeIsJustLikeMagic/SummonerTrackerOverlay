@@ -39,7 +39,7 @@ class MainWindow(QDialog):
         layout.addWidget(self.l)
         self.setFocusPolicy(Qt.NoFocus)
         self.ismovable = False
-        self.l.setStyleSheet("color: white")
+        self.l.setStyleSheet("color: rgb(230,230,230)")
         trayIcon = QSystemTrayIcon(QIcon("trackerIcon.xpm"), self)
         menu = QMenu()
         exitAction = menu.addAction("Exit")
@@ -222,10 +222,12 @@ tries = 1
 def dismaldiesmaldiesmal(s):
     global activeGameFound
     global tries
-    print('activeGameFound', activeGameFound)
+    #print('activeGameFound', activeGameFound)
     try:
         print('activeGame Try')
+        then = time.time()
         r = s.get("https://127.0.0.1:2999/help", verify = False)
+
         if activeGameFound is False:
             activeGameFound = True
             mqttclient()
@@ -237,9 +239,11 @@ def dismaldiesmaldiesmal(s):
         else :
             c.text.emit('no active game found')
             print('disconnectmqtt')
+        if activeGameFound:
             disconnectmqtt()
         tries = tries +1
         activeGameFound = False
+    #print(time.time() - then)
     time.sleep(20)
     dismaldiesmaldiesmal(s)
 def gameStart():
@@ -247,10 +251,8 @@ def gameStart():
     t = threading.Thread(name='activeGameSearch', target = lambda: dismaldiesmaldiesmal(s))
     t.setDaemon(True)
     t.start()
-
 if __name__ == '__main__':
     gameStart()
-
     app = QApplication([])
     window = MainWindow()
     app.exec_()
