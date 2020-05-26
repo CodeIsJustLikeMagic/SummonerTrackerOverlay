@@ -177,8 +177,13 @@ def loadTopicsuffix():
     j = json.loads(r.content)
     ##print(j)
     li = np.array([])
+    team='empty'
     for player in j:
+        name = player.get("summonerName", "")
+        if name == activeplayer:
+            team = player.get("team", "")
         li = np.append(li, player.get("summonerName", ""))
+    li = np.append(li, team)
     topic = str(hashNames(li))
     ##print(topic)
     return topic, str(java_string_hashcode(activeplayer))
@@ -237,7 +242,6 @@ def hashNames(li):
     con = ''
     for e in li:
         con = con + e
-    #print(con)
     h = java_string_hashcode(con)
     return h
 
