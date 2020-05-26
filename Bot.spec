@@ -3,8 +3,8 @@
 block_cipher = None
 
 
-a = Analysis(['Bot.py'],
-             pathex=['D:\\Eigene Dateien\\Dokumente\\GitHub\\SummonerTrackerClientP'],
+a = Analysis(['D:\\Eigene Dateien\\Dokumente\\Github\\SummonerTrackerClientP\\Bot.py'],
+             pathex=['D:\\Eigene Dateien\\Dokumente\\GitHub\\TrackerOverlayBuild\\OneFileBuild'],
              binaries=[],
              datas=[],
              hiddenimports=[],
@@ -15,6 +15,7 @@ a = Analysis(['Bot.py'],
              win_private_assemblies=False,
              cipher=block_cipher,
              noarchive=False)
+a.datas += [('./assets/trackerIcon.xpm', 'D:\\Eigene Dateien\\Dokumente\\Github\\SummonerTrackerClientP\\assets\\trackerIcon.xpm',  'DATA')]
 pyz = PYZ(a.pure, a.zipped_data,
              cipher=block_cipher)
 exe = EXE(pyz,
@@ -23,11 +24,12 @@ exe = EXE(pyz,
           a.zipfiles,
           a.datas,
           [],
-          name='Bot',
+          name='TrackerOverlay',
           debug=False,
           bootloader_ignore_signals=False,
           strip=False,
           upx=True,
           upx_exclude=[],
           runtime_tmpdir=None,
-          console=False )
+          console=False,
+		  icon='trackerIcon.ico')
