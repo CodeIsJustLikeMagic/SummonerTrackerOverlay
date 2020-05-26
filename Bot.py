@@ -1,19 +1,20 @@
 # Bot.py
-import discord
 from PyQt5.QtGui import QFont, QIcon, QColor
 from PyQt5.QtWidgets import QApplication, QLabel, QDialog, QVBoxLayout, QSystemTrayIcon, QMenu, QDesktopWidget, \
     QGraphicsDropShadowEffect
 from PyQt5.QtCore import Qt, pyqtSignal, QObject, QTimer, QCoreApplication
+import paho.mqtt.client as mqtt
 import threading
+import lcu_connector_python as lcu
+from numpy import unicode
+import numpy as np
 
 
 class Communicate(QObject):
     text = pyqtSignal(str)
     initMove = pyqtSignal(int, int)
 
-
 c = Communicate()
-
 
 class MainWindow(QDialog):
 
@@ -47,6 +48,13 @@ class MainWindow(QDialog):
         moveAction.triggered.connect(lambda: self.movable())
         resetPosAction = menu.addAction("Reset Position")
         resetPosAction.triggered.connect(self.resetPos)
+        showmqttInfoAction= menu.addAction("show mqtt info")
+        global connectionInfo
+        showmqttInfoAction.triggered.connect(lambda : c.text.emit(connectionInfo))
+        newConnection = menu.addAction('new Connection')
+        newConnection.triggered.connect(renonnectmqtt)
+
+
         trayIcon.setContextMenu(menu)
         trayIcon.show()
 
@@ -123,35 +131,126 @@ class MainWindow(QDialog):
                 event.ignore()
                 return
 
+def on_message(client,userdata,message):
+    message = message.payload.decode("utf-8")
+    message = message.replace(', ', '\n')
+    message = message.replace(',', '')
+    print('revieced message', message)
+    c.text.emit(message)
 
-def connectBot():
-    with open("secret.env") as f:
-        secret = f.read()
-    client = discord.Client()
+def loadTopicsuffix():
 
-    @client.event
-    async def on_ready():
-        print(f'{client.user} has connected to Discord!')
-        c.text.emit('connected')
+    # api_connection_data = lcu.connect("D:/Program/RiotGames/LeagueOfLegends")
+    try:
+        r = requests.get("https://127.0.0.1:2999/liveclientdata/playerlist", verify=False)
+    except Exception as e:
+        print('catch error')
+        print(e)
+        return None,None
+    activeplayer = requests.get("https://127.0.0.1:2999/liveclientdata/activeplayername", verify = False)
+    activeplayer = json.loads(activeplayer.content)
+    j = json.loads(r.content)
+    print(j)
+    li = np.array([])
+    for player in j:
+        li = np.append(li, player.get("summonerName", ""))
+    topic = str(hashNames(li))
+    print(topic)
+    return topic, str(java_string_hashcode(activeplayer))
 
-    @client.event
-    async def on_message(message):
-        if message.author == client.user:
-            return
-        if str(message.channel) == 'summonertracker':
-            # display the content of the message in overlay
-            # await message.channel.send("I'm a bot");
-            message = message.content.replace(', ', '\n')
-            message = message.replace(',', '')
-            c.text.emit(message)
+connectionInfo = 'will connect once game starts'
+clientHolder = None
+def mqttclient():
+    print('connecting mqtt client')
+    topicsuffix,clientIdSuffix = loadTopicsuffix()
+    if topicsuffix is None:
+        topicsuffix = "0"
+        clientIdSuffix = "000"
+    broker_address="mqtt.eclipse.org"
+    clientID = "observer"+clientIdSuffix
+    topic = "SpellTracker/Match" + topicsuffix
+    client = mqtt.Client(clientID)
+    client.on_message = on_message
+    print(clientID,topic)
+    client.connect(broker_address)
+    global connectionInfo
+    connectionInfo = 'topic ' + topic + '\nclient id '+clientID
+    c.text.emit('connected\n'+connectionInfo)
+    client.subscribe(topic)
+    client.loop_start()
+    global clientHolder
+    clientHolder = client
+    time.sleep(6)
+    c.text.emit('')
+def disconnectmqtt():
+    global clientHolder
+    clientHolder.disconnect()
+def renonnectmqtt():
+    disconnectmqtt()
+    mqttclient()
+def java_string_hashcode(s):
+    """Mimic Java's hashCode in python 2"""
+    try:
+        s = unicode(s)
+    except:
+        try:
+            s = unicode(s.decode('utf8'))
+        except:
+            raise Exception("Please enter a unicode type string or utf8 bytestring.")
+    h = 0
+    for c in s:
+        h = int((((31 * h + ord(c)) ^ 0x80000000) & 0xFFFFFFFF) - 0x80000000)
+    return h
 
-    t = threading.Thread(target=lambda: client.run(secret))
+def hashNames(li):
+    print('hashNames', li)
+    li = np.sort(li)
+    con = ''
+    for e in li:
+        con = con + e
+    print(con)
+    h = java_string_hashcode(con)
+    return h
+
+import requests
+import json
+import numpy as np
+
+import time
+activeGameFound = False
+tries = 1
+def dismaldiesmaldiesmal(s):
+    global activeGameFound
+    global tries
+    print('activeGameFound', activeGameFound)
+    try:
+        print('activeGame Try')
+        r = s.get("https://127.0.0.1:2999/help", verify = False)
+        if activeGameFound is False:
+            activeGameFound = True
+            mqttclient()
+            tries = 1
+    except Exception as e:
+        print('exception: no active game, tries '+ str(tries))
+        if tries >= 2 :
+            c.text.emit('')
+        else :
+            c.text.emit('no active game found')
+            print('disconnectmqtt')
+            disconnectmqtt()
+        tries = tries +1
+        activeGameFound = False
+    time.sleep(20)
+    dismaldiesmaldiesmal(s)
+def gameStart():
+    s = requests.Session()
+    t = threading.Thread(name='activeGameSearch', target = lambda: dismaldiesmaldiesmal(s))
     t.setDaemon(True)
     t.start()
 
-
 if __name__ == '__main__':
-    connectBot()
+    gameStart()
+
     app = QApplication([])
     window = MainWindow()
     app.exec_()
