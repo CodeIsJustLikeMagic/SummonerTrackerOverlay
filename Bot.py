@@ -1,7 +1,7 @@
 # Bot.py
 from PyQt5.QtGui import QFont, QIcon, QColor
 from PyQt5.QtWidgets import QApplication, QLabel, QDialog, QVBoxLayout, QSystemTrayIcon, QMenu, QDesktopWidget, \
-    QGraphicsDropShadowEffect
+    QGraphicsDropShadowEffect, QPushButton, QFrame, QHBoxLayout, QToolButton, QWidget, QGridLayout
 from PyQt5.QtCore import Qt, pyqtSignal, QObject, QTimer
 import paho.mqtt.client as mqtt
 import threading
@@ -12,15 +12,76 @@ class Communicate(QObject):
     text = pyqtSignal(str)
     initMove = pyqtSignal(int, int)
 
-c = Communicate()
 
+c = Communicate()
 
 def resource_path(relative_path):
     if hasattr(sys, '_MEIPASS'):
         return os.path.join(sys._MEIPASS, relative_path)
     return os.path.join(os.path.abspath('.'), relative_path)
 
-class MainWindow(QDialog):
+class SetterWindow(QDialog):
+    def __init__(self):
+        super().__init__()
+        self.setWindowFlags(Qt.WindowStaysOnTopHint | Qt.FramelessWindowHint)
+        self.setAttribute(Qt.WA_TranslucentBackground)
+        grid_layout = QGridLayout()
+        self.setLayout(grid_layout)
+
+        championLabels = np.array([])
+        for x in range(5):
+            champlbl = QLabel("player"+str(x+1))
+            grid_layout.addWidget(champlbl, x*2, 0)
+            championLabels = np.append(championLabels, champlbl)
+        spells = np.array([])
+        for x in range(10):
+            champs1 = QPushButton("spell")
+            grid_layout.addWidget(champs1, x, 1)
+            spells = np.append(spells, champs1)
+
+        ult = np.array([])
+        for x in range(5):
+            champsult = QPushButton("ult")
+            grid_layout.addWidget(champsult, 1+(x*2), 0)
+            ult = np.append(ult,champsult)
+
+        spells[0].clicked.connect(lambda: StartSpellTrack(0))
+        spells[1].clicked.connect(lambda: StartSpellTrack(1))
+        spells[2].clicked.connect(lambda: StartSpellTrack(2))
+        spells[3].clicked.connect(lambda: StartSpellTrack(3))
+        spells[4].clicked.connect(lambda: StartSpellTrack(4))
+        spells[5].clicked.connect(lambda: StartSpellTrack(5))
+        spells[6].clicked.connect(lambda: StartSpellTrack(6))
+        spells[7].clicked.connect(lambda: StartSpellTrack(7))
+        spells[8].clicked.connect(lambda: StartSpellTrack(8))
+        spells[9].clicked.connect(lambda: StartSpellTrack(9))
+
+        ult[0].clicked.connect(lambda: StartUltTrack(0))
+        ult[1].clicked.connect(lambda: StartUltTrack(1))
+        ult[2].clicked.connect(lambda: StartUltTrack(2))
+        ult[3].clicked.connect(lambda: StartUltTrack(3))
+        ult[4].clicked.connect(lambda: StartUltTrack(4))
+        self.show()
+
+def StartUltTrack(index):
+    print(index)
+    spell = dataholder.ults.get(index)
+    print(spell.champion, spell.cd, 'ult')
+
+def StartSpellTrack(index):
+    print(index)
+    spell = dataholder.spells.get(index)
+    print(spell.champion, spell.cd, spell.spellname)
+
+class PlayerWindow(QDialog):
+    def __init__(self):
+        super().__init__()
+        self.l = QLabel('champion')
+        self.s1 = QLabel('spell1')
+        self.s2 = QLabel('spell2')
+
+
+class OverlayWindow(QDialog):
 
     def __init__(self):
         super().__init__()
@@ -69,7 +130,8 @@ class MainWindow(QDialog):
         self.postxtfilepath = os.path.join(postxtdir,"pos.txt")
         try:
             os.mkdir(postxtdir)
-        except: FileExistsError
+        except FileExistsError:
+            pass
 
         import ctypes
         myappid = 'summonerTrackerOverlay'  # arbitrary string
@@ -162,6 +224,94 @@ def on_message(client,userdata,message):
     message = message.replace(',', '')
     c.text.emit(message)
 
+class Spell():
+    def __init__(self,shortName, cd):
+        self.shortName = shortName
+        self.cd = cd
+spellDatabase = {
+    'Heal':Spell('h',240),
+    'Ghost':Spell('ghost', 180),
+    'Barrier': Spell('barr', 180),
+    'Exhaust': Spell('exh', 210),
+    'Clarity': Spell('clarity',240),
+    'Flash':Spell('f',300),
+    'Teleport': Spell('tp',240),
+    'Smite':Spell('smite',15),
+    'Cleanse': Spell('cleanse', 210),
+    'Ignite':Spell('ign', 180)
+}
+class TrackEntry():
+    endTrack= None
+    def __init__(self,cd,spell):
+        endTrack = "setTime"
+
+class SummonerSpell():
+    def __init__(self, cham,spellname, buttonindex):
+        self.champion = cham
+        self.spellname = spellDatabase.get(spellname).shortName
+        self.cd = spellDatabase.get(spellname).cd
+        self.index = buttonindex
+class UltSpell():
+    def __init__(self,cham,cd,buttonindex):
+        self.champion = cham
+        self.spellname = 'ult'
+        self.cd = cd
+        self.index = buttonindex
+
+import datetime
+import time
+class GameTime():
+    def __init__(self):
+        self.gameStart = time.time()
+    def setGameTime(self, currentGameTime):
+        now = time.time()
+        self.gameStart = now - currentGameTime
+        now = time.time()
+        elapsed = now - self.gameStart
+        print(str(datetime.timedelta(seconds=elapsed))) # 1:30:47.285645 at 90 minutes in game
+    def advanceGameTime(self):
+        now = time.time()
+        elapsed = now - self.gameStart
+        gameTimeMins = str(datetime.timedelta(seconds=elapsed))
+        print(gameTimeMins)
+
+gameTime = GameTime()
+
+def advanceGameTime():
+    gameTime.advanceGameTime()
+    time.sleep(1)
+    advanceGameTime()
+class Dataholder():
+    def __init__(self):
+        self.spells={}
+        self.ults={}
+        self.lvls={}
+    def new(self):
+        self.spells={}
+        self.ults={}
+        self.lvls={}
+    def addSpell(self,index, SummonerSpell):
+        self.spells[index] = SummonerSpell
+    def addUlt(self,index,SummonerSpell):
+        self.spells[index] = UltSpell
+    def addLvl(self,champion, lvl):
+        self.lvls[champion] = lvl
+
+dataholder = Dataholder()
+
+def loadLevels():
+    try:
+        r = requests.get("https://127.0.0.1:2999/liveclientdata/playerlist",verify = False)
+    except Exception as e:
+        return
+    j = json.loads(r.content)
+    for player in j:
+        if player.get("team", "") != myteam:
+            champ = player.get("championName","")
+            lvl = player.get("level","")
+            dataholder.lvls[champ] = lvl
+
+myteam = "empty"
 def loadTopicsuffix():
     #print('loading topic suffix and clientId from aktive game api')
 
@@ -177,15 +327,33 @@ def loadTopicsuffix():
     j = json.loads(r.content)
     ##print(j)
     li = np.array([])
-    team='empty'
+    global myteam
     for player in j:
         name = player.get("summonerName", "")
         if name == activeplayer:
-            team = player.get("team", "")
+            myteam = player.get("team", "")
         li = np.append(li, player.get("summonerName", ""))
-    li = np.append(li, team)
+    li = np.append(li, myteam)
+    index = 0
+    ultindex = 0
+    dataholder.new()
+    for player in j:
+        #if player.get("team","") != myteam:
+            print('player that is not in my team found')
+            name = player.get("summonerName","")
+            champ = player.get("championName","")
+            sp1 = player.get("summonerSpells").get("summonerSpellOne").get("displayName")
+            dataholder.addSpell(index, SummonerSpell(champ,sp1,index))
+            index = index +1
+            sp2 = player.get("summonerSpells").get("summonerSpellTwo").get("displayName")
+            dataholder.addSpell(index, SummonerSpell(champ, sp2, index))
+            index = index +1
+            dataholder.addUlt(ultindex,UltSpell(champ,110,ultindex))
+            lvl = player.get("level","")
+            dataholder.addLvl(champ,lvl)
+            #set sp1, sp2, champName in window (create new setterWindow with list of champions and spells)
+
     topic = str(hashNames(li))
-    ##print(topic)
     return topic, str(java_string_hashcode(activeplayer))
 
 connectionInfo = 'will connect once game starts'
@@ -235,7 +403,6 @@ def java_string_hashcode(s):
     for c in s:
         h = int((((31 * h + ord(c)) ^ 0x80000000) & 0xFFFFFFFF) - 0x80000000)
     return h
-
 def hashNames(li):
     #print('hashNames', li)
     li = np.sort(li)
@@ -252,33 +419,28 @@ import numpy as np
 import time
 activeGameFound = False
 tries = 1
-def dismaldiesmaldiesmal(s):
+def gameCheck(s):
+    print("gameCheck")
     global activeGameFound
     global tries
-    sleeptime = 20
-    ##print('activeGameFound', activeGameFound)
     try:
-        #print('game Aktive:', activeGameFound)
-        #print('looking for aktive game')
-        then = time.time()
-        r = s.get("https://127.0.0.1:2999/help", verify = False)
-        #print('checking port 2999',r)
-        sleeptime = 60
-        if activeGameFound is False: # new game found
-            #check is still in loading screen
-            r = requests.get("https://127.0.0.1:2999/liveclientdata/activeplayername", verify=False)
-            #print('checking if in loading screen',r)
-            if r.status_code != 200:
-                c.text.emit('loading screen')
-                #print('loading screen')
-                time.sleep(15)
-                dismaldiesmaldiesmal(s)
-                return
+        r = s.get("https://127.0.0.1:2999/liveclientdata/gamestats", verify = False)
+        if r.status_code !=200:
+            time.sleep(5)
+            gameCheck(s)
+            return
+        if activeGameFound is False:
             activeGameFound = True
             mqttclient()
             tries = 1
+        j = json.loads(r.content)
+        currentTime = j.get("gameTime")
+        gameTime.setGameTime(currentTime)
+        loadLevels()
+        time.sleep(5)
+        gameCheck(s)
+        return
     except Exception as e:
-        #print('exception: no active game, tries '+ str(tries), e)
         if tries >= 2 :
             c.text.emit('')
         else :
@@ -288,16 +450,24 @@ def dismaldiesmaldiesmal(s):
             disconnectmqtt()
         tries = tries +1
         activeGameFound = False
-    ##print(time.time() - then)
-    time.sleep(sleeptime)
-    dismaldiesmaldiesmal(s)
-def gameStart():
+    time.sleep(5)
+    gameCheck(s)
+def gameCheckThread():
     s = requests.Session()
-    t = threading.Thread(name='activeGameSearch', target = lambda: dismaldiesmaldiesmal(s))
+    t = threading.Thread(name='activeGameSearch', target = lambda: gameCheck(s))
     t.setDaemon(True)
     t.start()
+
+    t2 = threading.Thread(name='advanceTime', target = advanceGameTime)
+    t2.setDaemon(True)
+    t2.start()
+    print('hallo')
+#def advanceThread():
 if __name__ == '__main__':
-    gameStart()
+    print(spellDatabase.get('flash'))
+    gameCheckThread()
+    #advanceThread()
     app = QApplication([])
-    window = MainWindow()
+    setterWindow = SetterWindow()
+    window = OverlayWindow()
     app.exec_()
