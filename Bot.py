@@ -24,6 +24,7 @@ class Communicate(QObject):
     colorUnset = pyqtSignal(int)
     exitC = pyqtSignal()
     hotkeyklicked = pyqtSignal()
+    status = pyqtSignal(str)
 
 
 c = Communicate()
@@ -32,7 +33,6 @@ def resource_path(relative_path):
     if hasattr(sys, '_MEIPASS'):
         return os.path.join(sys._MEIPASS, relative_path)
     return os.path.join(os.path.abspath('.'), relative_path)
-
 class SetterWindow(QDialog):
     def __init__(self):
         super().__init__()
@@ -271,7 +271,7 @@ class OverlayWindow(QDialog):
 
         self.setWindowFlags(Qt.WindowStaysOnTopHint | Qt.FramelessWindowHint)
         self.setAttribute(Qt.WA_TranslucentBackground)
-        self.l = QLabel('connecting...')
+        self.l = QLabel('')
 
         font = QFont('Serif', 11)
         font.setWeight(62)
@@ -281,12 +281,24 @@ class OverlayWindow(QDialog):
         effect.setColor(QColor(0,0,0,255))
         effect.setOffset(1)
         self.l.setGraphicsEffect(effect)
+        self.l.setStyleSheet("color: rgb(230,230,230)")
 
+        self.statuslbl = QLabel('Overlay Started')
+        self.statuslbl.setFont(font)
+        effect = QGraphicsDropShadowEffect()
+        effect.setBlurRadius(0)
+        effect.setColor(QColor(0, 0, 0, 255))
+        effect.setOffset(1)
+        self.statuslbl.setGraphicsEffect(effect)
+        self.statuslbl.setStyleSheet("color: rgb(230,230,230);background-color: rgb(130,130,130)")
+
+
+        c.status.connect(lambda m: self.showStatus(m))
         c.text.connect(lambda m: self.l.setText(m))
         layout.addWidget(self.l)
+        layout.addWidget(self.statuslbl)
         self.setFocusPolicy(Qt.NoFocus)
         self.ismovable = False
-        self.l.setStyleSheet("color: rgb(230,230,230)")
 
         # Translate asset paths to useable format for PyInstaller
         #print(resource_path('./assets/trackerIcon.xpm'))
@@ -300,8 +312,13 @@ class OverlayWindow(QDialog):
         moveAction.triggered.connect(self.movable)
         resetPosAction = menu.addAction("Reset Position")
         resetPosAction.triggered.connect(self.resetPos)
+        toggleSetterAction = menu.addAction("Toggle Setter Window")
+        toggleSetterAction.triggered.connect(lambda: c.hotkeyklicked.emit())
         showmqttInfoAction= menu.addAction("show mqtt info")
-        showmqttInfoAction.triggered.connect(lambda : c.text.emit(mqttclient.connectionInfo))
+        showmqttInfoAction.triggered.connect(self.showMQTTInfo)
+        openHotKeyFileAction = menu.addAction("set Hotkey")
+        global hotkeyFilePath
+        openHotKeyFileAction.triggered.connect(lambda: os.startfile(hotkeyFilePath))
         newConnection = menu.addAction('new Connection')
         newConnection.triggered.connect(mqttclient.renonnectmqtt)
         #self.aboutToQuit(disconnectmqtt())
@@ -332,6 +349,17 @@ class OverlayWindow(QDialog):
         except FileNotFoundError:
             pass
             #print('no position file')
+    def showMQTTInfo(self):
+        c.status.emit(mqttclient.connectionInfo)
+        timer = QTimer(self)
+        timer.timeout.connect(lambda: c.status.emit(''))
+        timer.start(18000)
+    def showStatus(self,m):
+        if len(m)==0:
+            self.statuslbl.hide()
+        else:
+            self.statuslbl.setHidden(False)
+            self.statuslbl.setText(m)
     def closeEvent(self, event) -> None:
         #print('close Overlay')
         mqttclient.disconnectmqtt()
@@ -481,9 +509,10 @@ class Dataholder():
         self.spells={}
         self.lvls={}
         self.tracks={}
-    def new(self):
+    def clear(self):
         self.spells={}
         self.lvls={}
+        self.tracks = {}
     def addSpell(self,index, spell):
         self.spells[index] = spell
     def addLvl(self,champion, lvl):
@@ -528,7 +557,7 @@ def loadWithApi():
     li = np.append(li, myteam)
     index = 0
     ultindex = 10
-    dataholder.new()
+    dataholder.clear()
     for player in j:
         if player.get("team","") != myteam:
             name = player.get("summonerName","")
@@ -580,13 +609,13 @@ class Mqttclient():
         client.connect(broker_address)
         global connectionInfo
         connectionInfo = 'topic ' + self.topic + '\nclient id '+self.clientID
-        c.text.emit('connected\n'+connectionInfo)
+        c.status.emit('connected\n'+connectionInfo)
         #print('mqtt connected.')
         client.subscribe(self.topic)
         client.loop_start()
         self.clientHolder = client
-        time.sleep(6)
-        c.text.emit('')
+        time.sleep(10)
+        c.status.emit('')
     def send(self,msg):
         print('sending', msg)
         if self.clientHolder is not None:
@@ -623,40 +652,50 @@ def hashNames(li):
 
 activeGameFound = False
 tries = 1
-def gameCheck(s):
+def testConnection(s):
     global activeGameFound
     global tries
     try:
         r = s.get("https://127.0.0.1:2999/liveclientdata/gamestats", verify = False)
         if r.status_code !=200:
-            time.sleep(5)
-            gameCheck(s)
             return
         if activeGameFound is False:
             activeGameFound = True
             j = json.loads(r.content)
             currentTime = j.get("gameTime")
             gameTime.setGameTime(currentTime)
+            loadLevels()
             mqttclient.connect()
             tries = 1
+            return
         j = json.loads(r.content)
         currentTime = j.get("gameTime")
         gameTime.setGameTime(currentTime)
         loadLevels()
-        time.sleep(5)
-        gameCheck(s)
         return
     except Exception as e:
-        if tries >= 2 :
-            c.text.emit('')
-        else :
-            c.text.emit('no active game found')
+        print(tries)
+        if tries == 3 :
+            #print(tries, 1)
+            #print('clear text. to many tries')
+            c.status.emit('')
+            tries = tries +1
+        elif tries == 2:
+            c.status.emit('Will keep looking even when hiding')
+            tries = tries + 1
+        elif tries  ==1:
+            #print(tries, 'no active game')
+            c.status.emit('Looking for active game...')
+            tries = tries + 1
         if activeGameFound:
             #print('disconnect previous mqtt connection')
             mqttclient.disconnectmqtt()
-        tries = tries +1
+            dataholder.clear()
         activeGameFound = False
-    time.sleep(5)
+        return
+def gameCheck(s):
+    testConnection(s)
+    time.sleep(10)
     gameCheck(s)
 def startThreads():
     s = requests.Session()
@@ -672,22 +711,28 @@ def startThreads():
     t3.setDaemon(True)
     t3.start()
 import keyboard
+hotkeyFilePath = ''
 def loadHotkey():
+    global hotkeyFilePath
     postxtdir = os.path.join(os.getenv('APPDATA'), "SummonerTrackerOverlay")
-    postxtfilepath = os.path.join(postxtdir, "hotkey.txt")
-    keys ='shift'
+    hotkeyFilePath = os.path.join(postxtdir, "hotkey.txt")
+    keys = '^'
     try:
         os.mkdir(postxtdir)
     except FileExistsError:
         pass
     try:
-        with open(postxtfilepath) as f:
+        with open(hotkeyFilePath) as f:
             keys = f.read()
     except FileNotFoundError:
-        f = open(postxtfilepath, "w")
+        f = open(hotkeyFilePath, "w")
         f.write(keys)
         f.close()
-    keyboard.add_hotkey(keys,lambda: c.hotkeyklicked.emit())
+    keyboard.add_hotkey(keys,reactToHotKey)
+def reactToHotKey():
+    global activeGameFound
+    if activeGameFound:
+        c.hotkeyklicked.emit()
 
 if __name__ == '__main__':
     startThreads()
