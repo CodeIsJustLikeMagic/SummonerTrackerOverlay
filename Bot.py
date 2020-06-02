@@ -9,7 +9,6 @@ from numpy import unicode
 import os, sys
 import requests
 import json
-import numpy as np
 import time
 
 class Communicate(QObject):
@@ -50,8 +49,8 @@ class SetterWindow(QDialog):
         font.setWeight(62)
 
 
-        self.championLabels = np.array([])
-        self.ult = np.array([])
+        self.championLabels = []
+        self.ult = []
         for x in range(5):
             champlbl = QLabel("player"+str(x+1))
             champlbl.setFont(font)
@@ -62,7 +61,7 @@ class SetterWindow(QDialog):
             effect.setOffset(1)
             champlbl.setGraphicsEffect(effect)
             grid_layout.addWidget(champlbl, x*2, 0)
-            self.championLabels = np.append(self.championLabels, champlbl)
+            self.championLabels.append(champlbl)
             champsult = QPushButton("ult")
             champsult.setFont(font)
             effect = QGraphicsDropShadowEffect()
@@ -72,10 +71,10 @@ class SetterWindow(QDialog):
             champsult.setGraphicsEffect(effect)
             champsult.setStyleSheet(self.unSetStyle)
             grid_layout.addWidget(champsult, 1+(x*2), 0)
-            self.ult = np.append(self.ult,champsult)
+            self.ult.append(champsult)
 
-        self.spellButtons = np.array([])
-        self.minButtons = np.array([])
+        self.spellButtons = []
+        self.minButtons = []
         for x in range(10):
             champs1 = QPushButton("spell")
             champs1.setFont(font)
@@ -86,7 +85,7 @@ class SetterWindow(QDialog):
             champs1.setGraphicsEffect(effect)
             champs1.setStyleSheet("color: rgb(230,230,230); background-color: rgb(150,150,150)")
             grid_layout.addWidget(champs1, x, 1)
-            self.spellButtons = np.append(self.spellButtons, champs1)
+            self.spellButtons.append(champs1)
             minButton = QPushButton("-1 min")
             minButton.setFont(font)
             effect = QGraphicsDropShadowEffect()
@@ -96,7 +95,7 @@ class SetterWindow(QDialog):
             minButton.setGraphicsEffect(effect)
             minButton.setStyleSheet(self.unSetStyle)
             grid_layout.addWidget(minButton,x,2)
-            self.minButtons = np.append(self.minButtons, minButton)
+            self.minButtons.append(minButton)
         self.moveLabel = QLabel('grab me!')
         self.moveLabel.setFont(font)
         self.moveLabel.setStyleSheet("border: 5px solid white; color: rgb(230,230,230); background-color: rgb(150,150,150)")
@@ -596,14 +595,14 @@ def loadWithApi():
     activeplayer = requests.get("https://127.0.0.1:2999/liveclientdata/activeplayername", verify = False)
     activeplayer = json.loads(activeplayer.content)
     j = json.loads(r.content)
-    li = np.array([])
+    li = []
     global myteam
     for player in j:
         name = player.get("summonerName", "")
         if name == activeplayer:
             myteam = player.get("team", "")
-        li = np.append(li, player.get("summonerName", ""))
-    li = np.append(li, myteam)
+        li.append(player.get("summonerName",""))
+    li.append(myteam)
     index = 0
     ultindex = 10
     for player in j:
@@ -690,7 +689,7 @@ def java_string_hashcode(s):
     return h
 def hashNames(li):
     #print('hashNames', li)
-    li = np.sort(li)
+    li = sorted(li)
     con = ''
     for e in li:
         con = con + e
