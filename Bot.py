@@ -1,7 +1,7 @@
 # Bot.py
 from PyQt5.QtGui import QFont, QIcon, QColor
 from PyQt5.QtWidgets import QApplication, QLabel, QDialog, QVBoxLayout, QSystemTrayIcon, QMenu, QDesktopWidget, \
-    QGraphicsDropShadowEffect, QPushButton, QFrame, QHBoxLayout, QToolButton, QWidget, QGridLayout
+    QGraphicsDropShadowEffect, QPushButton, QGridLayout
 from PyQt5.QtCore import Qt, pyqtSignal, QObject, QTimer
 import paho.mqtt.client as mqtt
 import threading
@@ -498,8 +498,6 @@ class UltSpell():
         self.cd = cd
         self.index = buttonindex
 
-import datetime
-import time
 class GameTime():
     def __init__(self):
         self.gameStart = time.time()
@@ -509,24 +507,16 @@ class GameTime():
         self.gameStart = now - currentGameTime
         now = time.time()
         self.elapsed = now - self.gameStart
-        #print(str(datetime.timedelta(seconds=self.elapsed))) # 1:30:47.285645 at 90 minutes in game
     def advanceGameTime(self):
         now = time.time()
         self.elapsed = now - self.gameStart
-        self.gameTimeMins = time.strftime("%M:%S", time.gmtime(self.elapsed))#datetime.timedelta(seconds=self.elapsed))
-        #print(self.gameTimeMins)
+        self.gameTimeMins = time.strftime("%M:%S", time.gmtime(self.elapsed))
 
 gameTime = GameTime()
-needsSorting = False
 def advanceGameTime():
     global activeGameFound
-    global needsSorting
     if activeGameFound:
         gameTime.advanceGameTime()
-        if needsSorting:
-            #sortTracks dictionary
-
-            needsSorting = False
         showTrackEntrys()
         time.sleep(1)
         advanceGameTime()
