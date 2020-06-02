@@ -258,36 +258,31 @@ class SetterWindow(QDialog):
     def StartSpellTrack(self,index,modifier):
         self.lastAction = time.time()
         self.waitandSeeIfIdle()
-        spell = dataholder.spells.get(index)
+        spell = dataholder.getSpell(index)
         if spell == None:
             return
         trackentry = (TrackEntry(spell,modifier))
-        old = dataholder.tracks.get(index)
+        old = dataholder.getTrack(index)
         if old is not None:
             if old.endTrack > gameTime.elapsed:
                 mqttclient.send('r '+str(index))
                 return
         mqttclient.send('a '+str(index)+' '+str(trackentry.endTrack))
 
-def sortTracks(): # called while thread is locked
-    dataholder.tracks = dict(sorted(dataholder.tracks.items(), key=lambda x: x[1].endTrack))
+
 
 def SaveTrack(index, endTrack):
-    trackentry = TrackEntry(dataholder.spells.get(int(index)),0)
+    trackentry = TrackEntry(dataholder.getSpell(int(index)),0)
     trackentry.endTrack = float(endTrack)
-    with datalock:
-        dataholder.tracks[int(index)] = trackentry
-        sortTracks()
-        showTrackEntrys()
+    dataholder.addTrack(index,trackentry)
+    showTrackEntrys()
     c.colorSet.emit(int(index))
 
 def RemoveTrack(index):
-    track = dataholder.tracks.get(int(index))
+    track = dataholder.getTrack(int(index))
     if track is not None:
-        with datalock:
-            track.endTrack = float(0)
-            sortTracks()
-            showTrackEntrys()
+        dataholder.removeTrack(track)
+        showTrackEntrys()
         c.colorUnset(int(index))
 
 class OverlayWindow(QDialog):
@@ -517,6 +512,7 @@ def advanceGameTime():
     global activeGameFound
     if activeGameFound:
         gameTime.advanceGameTime()
+        print('advancing gametime')
         showTrackEntrys()
         time.sleep(1)
         advanceGameTime()
@@ -527,30 +523,57 @@ def advanceGameTime():
         c.unsetAll.emit()
 def showTrackEntrys():
     show = ''
-    for key,track in dataholder.tracks.items():
-        if track.endTrack > gameTime.elapsed:
-            show = show + track.desc + '\n'
-        else:
-            c.colorUnset.emit(key)
+    with datalock:
+        for key,track in dataholder.tracks.items():
+            if track.endTrack > gameTime.elapsed:
+                show = show + track.desc + '\n'
+            else:
+                c.colorUnset.emit(key)
     if len(show) > 0:
         show = gameTime.gameTimeMins + '\n\n' + show
     c.text.emit(show)
+
+datalock = threading.Lock()
 class Dataholder():
     def __init__(self):
-        self.spells={}
-        self.lvls={}
-        self.tracks={}
+        with datalock:
+            self.spells={}
+            self.lvls={}
+            self.tracks={}
     def clear(self):
-        self.spells={}
-        self.lvls={}
-        self.tracks = {}
+        with datalock:
+            self.spells={}
+            self.lvls={}
+            self.tracks = {}
     def addSpell(self,index, spell):
-        self.spells[index] = spell
-    def addLvl(self,champion, lvl):
-        self.lvls[champion] = lvl
+        with datalock:
+            self.spells[index] = spell
+            print(self.spells[index])
+    def setLvl(self, champion, lvl):
+        with datalock:
+            self.lvls[champion] = lvl
+    def addTrack(self, index, trackentry):
+        with datalock:
+            print('add track')
+            dataholder.tracks[int(index)] = trackentry
+            sortTracks()
+    def removeTrack(self, track):
+        with datalock:
+            track.endTrack = float(0)
+            sortTracks()
+    def getSpell(self, index):
+        with datalock:
+            ret = self.spells.get(index)
+        return ret
+    def getTrack(self,index):
+        with datalock:
+            ret = self.tracks.get(index)
+        return ret
+
+def sortTracks(): # called while thread is locked
+    dataholder.tracks = dict(sorted(dataholder.tracks.items(), key=lambda x: x[1].endTrack))
 
 dataholder = Dataholder()
-datalock = threading.Lock()
 def loadLevels():
     try:
         r = requests.get("https://127.0.0.1:2999/liveclientdata/playerlist",verify = False)
@@ -561,7 +584,7 @@ def loadLevels():
         if player.get("team", "") != myteam:
             champ = player.get("championName","")
             lvl = player.get("level","")
-            dataholder.lvls[champ] = lvl
+            dataholder.setLvl(champ,lvl)
 
 myteam = "empty"
 def loadWithApi():
@@ -597,10 +620,11 @@ def loadWithApi():
             index = index +1
             dataholder.addSpell(ultindex,UltSpell(champ,110,ultindex))
             lvl = player.get("level","")
-            dataholder.addLvl(champ,lvl)
+            dataholder.setLvl(champ, lvl)
             #set sp1, sp2, champName in window (create new setterWindow with list of champions and spells)
             c.setterChampion.emit(ultindex-10,champ)
             ultindex = ultindex + 1
+    print('done loading')
     topic = str(hashNames(li))
     return topic, str(java_string_hashcode(activeplayer))
 def on_message(client, userdata, message):
