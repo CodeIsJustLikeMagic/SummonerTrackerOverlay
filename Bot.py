@@ -509,6 +509,7 @@ class GameTime():
 gameTime = GameTime()
 def advanceGameTime():
     global activeGameFound
+    print('activeGameFOund',activeGameFound)
     if activeGameFound:
         gameTime.advanceGameTime()
         print('advancing gametime')
@@ -516,9 +517,8 @@ def advanceGameTime():
         time.sleep(1)
         advanceGameTime()
     else:
-        with datalock:
-            dataholder.clear()
-            c.text.emit('')
+        dataholder.clear()
+        c.text.emit('')
         c.unsetAll.emit()
 def showTrackEntrys():
     show = ''
@@ -541,6 +541,7 @@ class Dataholder():
             self.tracks={}
     def clear(self):
         with datalock:
+            print('clearing data')
             self.spells={}
             self.lvls={}
             self.tracks = {}
