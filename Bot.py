@@ -249,7 +249,7 @@ class SetterWindow(QDialog):
                 return
 
     def waitandSeeIfIdle(self):
-        #print('waiting for idle')
+       #print('waiting for idle')
         QTimer.singleShot(6000, self.checkStillIdle)
     def checkStillIdle(self):
         if time.time()-self.lastAction >= 5.8:
@@ -274,19 +274,17 @@ def SaveTrack(index, endTrack):
     trackentry.endTrack = float(endTrack)
     dataholder.tracks[int(index)] = trackentry
     c.colorSet.emit(int(index))
+    global needsSorting
+    needsSorting = True
 
 def RemoveTrack(index):
     track = dataholder.tracks.get(int(index))
     if track is not None:
+        global needsSorting
+        needsSorting = True
+        print('needsSorting True after removing track^^')
         track.endTrack = float(0)
-        c.colorUnset(index)
-
-class PlayerWindow(QDialog):
-    def __init__(self):
-        super().__init__()
-        self.l = QLabel('champion')
-        self.s1 = QLabel('spell1')
-        self.s2 = QLabel('spell2')
+        c.colorUnset(int(index))
 
 class OverlayWindow(QDialog):
 
@@ -515,11 +513,16 @@ class GameTime():
         #print(self.gameTimeMins)
 
 gameTime = GameTime()
-
+needsSorting = False
 def advanceGameTime():
     global activeGameFound
+    global needsSorting
     if activeGameFound:
         gameTime.advanceGameTime()
+        if needsSorting:
+            #sortTracks dictionary
+            dataholder.tracks = dict(sorted(dataholder.tracks.items(), key = lambda x:x[1].endTrack))
+            needsSorting = False
         showTrackEntrys()
         time.sleep(1)
         advanceGameTime()
