@@ -25,6 +25,8 @@ class Communicate(QObject):
     exitC = pyqtSignal()
     hotkeyklicked = pyqtSignal()
     status = pyqtSignal(str)
+    unsetAll = pyqtSignal()
+    showmqtt = pyqtSignal()
 
 
 c = Communicate()
@@ -139,11 +141,13 @@ class SetterWindow(QDialog):
         c.settSpell.connect(lambda index,val: self.setspelllabel(index,val))
         c.resetPos.connect(self.resetPos)
         c.move.connect(self.movable)
-        c.colorSet.connect(lambda index: self.Set(index))
-        c.colorUnset.connect(lambda index: self.Unset(index))
+        c.colorSet.connect(lambda index: self.set(index))
+        c.colorUnset.connect(lambda index: self.unset(index))
         c.exitC.connect(self.close)
         c.unmovable.connect(self.unmovable)
-        c.hotkeyklicked.connect(self.ShowOnKeyboardPress)
+        c.hotkeyklicked.connect(self.showOnKeyboardPress)
+        c.unsetAll.connect(self.clear)
+        self.lastAction = time.time()
         self.show()
         try:
             with open(self.postxtfilepath) as f:
@@ -156,20 +160,33 @@ class SetterWindow(QDialog):
             pass
         self.hide()
 
-    def ShowOnKeyboardPress(self):
+    def showOnKeyboardPress(self):
         if self.isHidden():
+            print('showing on keypress')
+            self.lastAction = time.time()
+            self.waitandSeeIfIdle()
             self.setHidden(False)
         else:
             self.hide()
         #show but dont steal focus on hotkeypressnnn
         #hide again if hotkey is pressed again
-    def Unset(self, index):
+    def clear(self):
+        for num, lbl in enumerate(self.championLabels,start = 1):
+            lbl.setText('player'+str(num))
+        for btn in self.spellButtons:
+            btn.setText('spell')
+            btn.setStyleSheet(self.unSetStyle)
+        for btn in self.minButtons:
+            btn.setStyleSheet(self.unSetStyle)
+        for num,btn in enumerate(self.ult,start=0):
+            btn.setStyleSheet(self.unSetStyle)
+    def unset(self, index):
         if index >=10:
             self.ult[int(index)-10].setStyleSheet(self.unSetStyle)
             return
         self.spellButtons[index].setStyleSheet(self.unSetStyle)
         self.minButtons[index].setStyleSheet(self.unSetStyle)
-    def Set(self, index):
+    def set(self, index):
         if index >=10:
             self.ult[index-10].setStyleSheet(self.setStyle)
             return
@@ -231,7 +248,16 @@ class SetterWindow(QDialog):
                 event.ignore()
                 return
 
+    def waitandSeeIfIdle(self):
+        #print('waiting for idle')
+        QTimer.singleShot(6000, self.checkStillIdle)
+    def checkStillIdle(self):
+        if time.time()-self.lastAction >= 5.8:
+            #print('idle detected')
+            self.hide()
     def StartSpellTrack(self,index,modifier):
+        self.lastAction = time.time()
+        self.waitandSeeIfIdle()
         spell = dataholder.spells.get(index)
         if spell == None:
             return
@@ -290,11 +316,12 @@ class OverlayWindow(QDialog):
         effect.setColor(QColor(0, 0, 0, 255))
         effect.setOffset(1)
         self.statuslbl.setGraphicsEffect(effect)
-        self.statuslbl.setStyleSheet("color: rgb(230,230,230);background-color: rgb(130,130,130)")
+        self.statuslbl.setStyleSheet("color: rgb(230,230,230);background-color: rgb(90,90,90)")
 
 
         c.status.connect(lambda m: self.showStatus(m))
         c.text.connect(lambda m: self.l.setText(m))
+        c.showmqtt.connect(self.showMQTTInfo)
         layout.addWidget(self.l)
         layout.addWidget(self.statuslbl)
         self.setFocusPolicy(Qt.NoFocus)
@@ -306,8 +333,9 @@ class OverlayWindow(QDialog):
         trayIcon = QSystemTrayIcon(icon, self)
         self.setWindowIcon(icon)
         menu = QMenu()
-        exitAction = menu.addAction("Exit")
-        exitAction.triggered.connect(self.close)
+        openHotKeyFileAction = menu.addAction("set Hotkey")
+        global hotkeyFilePath
+        openHotKeyFileAction.triggered.connect(lambda: os.startfile(hotkeyFilePath))
         moveAction = menu.addAction("Move")
         moveAction.triggered.connect(self.movable)
         resetPosAction = menu.addAction("Reset Position")
@@ -316,11 +344,10 @@ class OverlayWindow(QDialog):
         toggleSetterAction.triggered.connect(lambda: c.hotkeyklicked.emit())
         showmqttInfoAction= menu.addAction("show mqtt info")
         showmqttInfoAction.triggered.connect(self.showMQTTInfo)
-        openHotKeyFileAction = menu.addAction("set Hotkey")
-        global hotkeyFilePath
-        openHotKeyFileAction.triggered.connect(lambda: os.startfile(hotkeyFilePath))
         newConnection = menu.addAction('new Connection')
         newConnection.triggered.connect(mqttclient.renonnectmqtt)
+        exitAction = menu.addAction("Exit")
+        exitAction.triggered.connect(self.close)
         #self.aboutToQuit(disconnectmqtt())
         c.unmovable.connect(self.unmovable)
 
@@ -353,7 +380,7 @@ class OverlayWindow(QDialog):
         c.status.emit(mqttclient.connectionInfo)
         timer = QTimer(self)
         timer.timeout.connect(lambda: c.status.emit(''))
-        timer.start(18000)
+        timer.start(10000)
     def showStatus(self,m):
         if len(m)==0:
             self.statuslbl.hide()
@@ -490,10 +517,16 @@ class GameTime():
 gameTime = GameTime()
 
 def advanceGameTime():
-    gameTime.advanceGameTime()
-    showTrackEntrys()
-    time.sleep(1)
-    advanceGameTime()
+    global activeGameFound
+    if activeGameFound:
+        gameTime.advanceGameTime()
+        showTrackEntrys()
+        time.sleep(1)
+        advanceGameTime()
+    else:
+        dataholder.clear()
+        c.text.emit('')
+        c.unsetAll.emit()
 def showTrackEntrys():
     show = ''
     for key,track in dataholder.tracks.items():
@@ -534,19 +567,14 @@ def loadLevels():
 
 myteam = "empty"
 def loadWithApi():
-    #print('loading topic suffix and clientId from aktive game api')
-
     # api_connection_data = lcu.connect("D:/Program/RiotGames/LeagueOfLegends")
     try:
         r = requests.get("https://127.0.0.1:2999/liveclientdata/playerlist", verify=False)
     except Exception as e:
-        #print('catch error during loading from api')
-        #print(e)
         return None,None
     activeplayer = requests.get("https://127.0.0.1:2999/liveclientdata/activeplayername", verify = False)
     activeplayer = json.loads(activeplayer.content)
     j = json.loads(r.content)
-    ##print(j)
     li = np.array([])
     global myteam
     for player in j:
@@ -557,7 +585,6 @@ def loadWithApi():
     li = np.append(li, myteam)
     index = 0
     ultindex = 10
-    dataholder.clear()
     for player in j:
         if player.get("team","") != myteam:
             name = player.get("summonerName","")
@@ -575,15 +602,16 @@ def loadWithApi():
             dataholder.addLvl(champ,lvl)
             #set sp1, sp2, champName in window (create new setterWindow with list of champions and spells)
             c.setterChampion.emit(ultindex-10,champ)
+            ultindex = ultindex + 1
     topic = str(hashNames(li))
     return topic, str(java_string_hashcode(activeplayer))
 def on_message(client, userdata, message):
     msg = message.payload.decode("utf-8")
-    print('message', msg)
+    #print('message', msg)
     msg = msg.split(' ')
     if msg[0] == 'a':
         #index added
-        print(msg[1])
+        #print(msg[1])
         SaveTrack(msg[1], msg[2])
         return
     if msg[0] == 'r':
@@ -607,17 +635,14 @@ class Mqttclient():
         client.on_message = on_message
         #print(clientID,topic)
         client.connect(broker_address)
-        global connectionInfo
-        connectionInfo = 'topic ' + self.topic + '\nclient id '+self.clientID
-        c.status.emit('connected\n'+connectionInfo)
+        self.connectionInfo = 'connected\n'+'topic ' + self.topic + '\nclient id '+self.clientID
+        c.showmqtt.emit()
         #print('mqtt connected.')
         client.subscribe(self.topic)
         client.loop_start()
         self.clientHolder = client
-        time.sleep(10)
-        c.status.emit('')
     def send(self,msg):
-        print('sending', msg)
+        #print('sending', msg)
         if self.clientHolder is not None:
             self.clientHolder.publish(self.topic, msg)
     def disconnectmqtt(self):
@@ -654,6 +679,7 @@ activeGameFound = False
 tries = 1
 def testConnection(s):
     global activeGameFound
+    #print(activeGameFound)
     global tries
     try:
         r = s.get("https://127.0.0.1:2999/liveclientdata/gamestats", verify = False)
@@ -667,6 +693,7 @@ def testConnection(s):
             loadLevels()
             mqttclient.connect()
             tries = 1
+            startShowTrackThread()
             return
         j = json.loads(r.content)
         currentTime = j.get("gameTime")
@@ -674,7 +701,7 @@ def testConnection(s):
         loadLevels()
         return
     except Exception as e:
-        print(tries)
+        #print(tries)
         if tries == 3 :
             #print(tries, 1)
             #print('clear text. to many tries')
@@ -690,7 +717,6 @@ def testConnection(s):
         if activeGameFound:
             #print('disconnect previous mqtt connection')
             mqttclient.disconnectmqtt()
-            dataholder.clear()
         activeGameFound = False
         return
 def gameCheck(s):
@@ -702,14 +728,13 @@ def startThreads():
     t = threading.Thread(name='activeGameSearch', target = lambda: gameCheck(s))
     t.setDaemon(True)
     t.start()
-
-    t2 = threading.Thread(name='advanceTime', target = advanceGameTime)
-    t2.setDaemon(True)
-    t2.start()
-
     t3 = threading.Thread(name='hotkey', target= loadHotkey)
     t3.setDaemon(True)
     t3.start()
+def startShowTrackThread():
+    t2 = threading.Thread(name='advanceTime', target = advanceGameTime)
+    t2.setDaemon(True)
+    t2.start()
 import keyboard
 hotkeyFilePath = ''
 def loadHotkey():
