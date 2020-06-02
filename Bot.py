@@ -269,21 +269,25 @@ class SetterWindow(QDialog):
                 return
         mqttclient.send('a '+str(index)+' '+str(trackentry.endTrack))
 
+def sortTracks(): # called while thread is locked
+    dataholder.tracks = dict(sorted(dataholder.tracks.items(), key=lambda x: x[1].endTrack))
+
 def SaveTrack(index, endTrack):
     trackentry = TrackEntry(dataholder.spells.get(int(index)),0)
     trackentry.endTrack = float(endTrack)
-    dataholder.tracks[int(index)] = trackentry
+    with datalock:
+        dataholder.tracks[int(index)] = trackentry
+        sortTracks()
+        showTrackEntrys()
     c.colorSet.emit(int(index))
-    global needsSorting
-    needsSorting = True
 
 def RemoveTrack(index):
     track = dataholder.tracks.get(int(index))
     if track is not None:
-        global needsSorting
-        needsSorting = True
-        print('needsSorting True after removing track^^')
-        track.endTrack = float(0)
+        with datalock:
+            track.endTrack = float(0)
+            sortTracks()
+            showTrackEntrys()
         c.colorUnset(int(index))
 
 class OverlayWindow(QDialog):
@@ -521,14 +525,15 @@ def advanceGameTime():
         gameTime.advanceGameTime()
         if needsSorting:
             #sortTracks dictionary
-            dataholder.tracks = dict(sorted(dataholder.tracks.items(), key = lambda x:x[1].endTrack))
+
             needsSorting = False
         showTrackEntrys()
         time.sleep(1)
         advanceGameTime()
     else:
-        dataholder.clear()
-        c.text.emit('')
+        with datalock:
+            dataholder.clear()
+            c.text.emit('')
         c.unsetAll.emit()
 def showTrackEntrys():
     show = ''
@@ -555,7 +560,7 @@ class Dataholder():
         self.lvls[champion] = lvl
 
 dataholder = Dataholder()
-
+datalock = threading.Lock()
 def loadLevels():
     try:
         r = requests.get("https://127.0.0.1:2999/liveclientdata/playerlist",verify = False)
