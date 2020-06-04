@@ -130,12 +130,7 @@ class SetterWindow(QDialog):
         self.ult[3].clicked.connect(lambda: self.StartSpellTrack(13,7))
         self.ult[4].clicked.connect(lambda: self.StartSpellTrack(14,7))
 
-        postxtdir = os.path.join(os.getenv('APPDATA'),"SummonerTrackerOverlay")
-        self.postxtfilepath = os.path.join(postxtdir,"pos2.txt")
-        try:
-            os.mkdir(postxtdir)
-        except FileExistsError:
-            pass
+        self.postxtfilepath = os.path.join(appdatadir.overlaydir,"pos2.txt")
         c.setterChampion.connect(lambda index, val: self.setchampionlabel(index,val))
         c.settSpell.connect(lambda index,val: self.setspelllabel(index,val))
         c.resetPos.connect(self.resetPos)
@@ -149,6 +144,7 @@ class SetterWindow(QDialog):
         self.lastAction = time.time()
         self.show()
         try:
+
             with open(self.postxtfilepath) as f:
                 pos = f.read()
                 pos = pos.split(' ')
@@ -271,18 +267,21 @@ class SetterWindow(QDialog):
 
 
 def SaveTrack(index, endTrack):
+    logging.debug('attempting to save track (mqtt)')
     trackentry = TrackEntry(dataholder.getSpell(int(index)),0)
     trackentry.endTrack = float(endTrack)
     dataholder.addTrack(index,trackentry)
     showTrackEntrys()
     c.colorSet.emit(int(index))
+    logging.debug('save track success')
 
 def RemoveTrack(index):
+    logging.debug('attempting to remove track (mqtt)')
     track = dataholder.getTrack(int(index))
     if track is not None:
         dataholder.removeTrack(track)
         showTrackEntrys()
-        c.colorUnset(int(index))
+    logging.debug('remove track success')
 
 class OverlayWindow(QDialog):
 
@@ -347,12 +346,7 @@ class OverlayWindow(QDialog):
         #self.aboutToQuit(disconnectmqtt())
         c.unmovable.connect(self.unmovable)
 
-        postxtdir = os.path.join(os.getenv('APPDATA'),"SummonerTrackerOverlay")
-        self.postxtfilepath = os.path.join(postxtdir,"pos.txt")
-        try:
-            os.mkdir(postxtdir)
-        except FileExistsError:
-            pass
+        self.postxtfilepath = os.path.join(appdatadir.overlaydir,"pos.txt")
 
         import ctypes
         myappid = 'summonerTrackerOverlay'  # arbitrary string
@@ -367,11 +361,10 @@ class OverlayWindow(QDialog):
                 pos = f.read()
                 pos = pos.split(' ')
                 if len(pos) == 2:
-                    #print('moving overlay to position from appdata file')
                     self.move(int(int(pos[0]) / 2), int(int(pos[1]) / 2))
         except FileNotFoundError:
             pass
-            #print('no position file')
+            logging.debug('no position file')
     def showMQTTInfo(self):
         c.status.emit(mqttclient.connectionInfo)
         timer = QTimer(self)
@@ -384,7 +377,6 @@ class OverlayWindow(QDialog):
             self.statuslbl.setHidden(False)
             self.statuslbl.setText(m)
     def closeEvent(self, event) -> None:
-        #print('close Overlay')
         mqttclient.disconnectmqtt()
         c.exitC.emit()
         event.accept()
@@ -410,13 +402,11 @@ class OverlayWindow(QDialog):
     def movable(self):
         c.move.emit()
         self.ismovable = True
-        #print('moveable')
         self.setAttribute(Qt.WA_TranslucentBackground, on=False)
         self.setAutoFillBackground(False)
         self.l.setStyleSheet("border: 3px solid white; color: rgb(230,230,230)")
 
     def unmovable(self):
-        #print('unmovable')
         self.ismovable = False
         self.l.setStyleSheet("border: none; color: rgb(230,230,230)")
 
@@ -427,7 +417,6 @@ class OverlayWindow(QDialog):
         QTimer.singleShot(400, self.visibleIfNoMouse)
 
     def mousePressEvent(self, event):
-        #print('mouse Press Event')
         self.__mousePressPos = None
         self.__mouseMovePos = None
         if event.button() == Qt.LeftButton:
@@ -468,7 +457,10 @@ spellDatabase = {
     'Teleport': Spell('tp',240),
     'Smite':Spell('smite',15),
     'Cleanse': Spell('cleanse', 210),
-    'Ignite':Spell('ign', 180)
+    'Ignite':Spell('ign', 180),
+    'Mark':Spell('mark', 48),
+    'Challenging Smite': Spell('smite',15),
+    'Chilling Smite': Spell('smite',15)
 }
 
 class TrackEntry():
@@ -507,27 +499,27 @@ class GameTime():
         self.gameTimeMins = time.strftime("%M:%S", time.gmtime(self.elapsed))
 
 gameTime = GameTime()
-def advanceGameTime():
+def timeAndShow():
     global activeGameFound
-    print('activeGameFOund',activeGameFound)
+    #logging.debug('time and Show: activeGameFound ' + str(activeGameFound))
     if activeGameFound:
         gameTime.advanceGameTime()
-        print('advancing gametime')
+        #logging.debug('advancing gametime')
         showTrackEntrys()
-        time.sleep(1)
-        advanceGameTime()
     else:
         dataholder.clear()
         c.text.emit('')
         c.unsetAll.emit()
 def showTrackEntrys():
     show = ''
+    #logging.debug('attempting to show track entrys')
     with datalock:
         for key,track in dataholder.tracks.items():
             if track.endTrack > gameTime.elapsed:
                 show = show + track.desc + '\n'
             else:
                 c.colorUnset.emit(key)
+        #logging.debug('ran though all tracks')
     if len(show) > 0:
         show = gameTime.gameTimeMins + '\n\n' + show
     c.text.emit(show)
@@ -541,27 +533,31 @@ class Dataholder():
             self.tracks={}
     def clear(self):
         with datalock:
-            print('clearing data')
+            logging.debug('clearing data')
             self.spells={}
             self.lvls={}
             self.tracks = {}
     def addSpell(self,index, spell):
         with datalock:
             self.spells[index] = spell
-            print(self.spells[index])
+            logging.debug('spell saved ' +spell.spellname)
     def setLvl(self, champion, lvl):
         with datalock:
             self.lvls[champion] = lvl
+        logging.debug('set level for '+ champion + str(lvl))
     def addTrack(self, index, trackentry):
+        logging.debug('attempting to add track')
         with datalock:
-            print('add track')
+            logging.debug('add track')
             dataholder.tracks[int(index)] = trackentry
             sortTracks()
     def removeTrack(self, track):
         with datalock:
+            logging.debug('removeTrack')
             track.endTrack = float(0)
             sortTracks()
     def getSpell(self, index):
+        logging.debug('attempting to get spell')
         with datalock:
             ret = self.spells.get(index)
         return ret
@@ -571,10 +567,12 @@ class Dataholder():
         return ret
 
 def sortTracks(): # called while thread is locked
+    logging.debug('sorting tracks')
     dataholder.tracks = dict(sorted(dataholder.tracks.items(), key=lambda x: x[1].endTrack))
 
 dataholder = Dataholder()
 def loadLevels():
+    logging.debug('attempting to load levels')
     try:
         r = requests.get("https://127.0.0.1:2999/liveclientdata/playerlist",verify = False)
     except Exception as e:
@@ -585,9 +583,12 @@ def loadLevels():
             champ = player.get("championName","")
             lvl = player.get("level","")
             dataholder.setLvl(champ,lvl)
+    logging.debug('loadlevel success')
 
 myteam = "empty"
 def loadWithApi():
+
+    logging.debug('loading with api')
     # api_connection_data = lcu.connect("D:/Program/RiotGames/LeagueOfLegends")
     try:
         r = requests.get("https://127.0.0.1:2999/liveclientdata/playerlist", verify=False)
@@ -611,21 +612,26 @@ def loadWithApi():
             name = player.get("summonerName","")
             champ = player.get("championName","")
             sp1 = player.get("summonerSpells").get("summonerSpellOne").get("displayName")
+            #dataholder.spells[index] = SummonerSpell(champ, sp1, index)
+            logging.debug('enemy '+name+champ,sp1)
             dataholder.addSpell(index, SummonerSpell(champ,sp1,index))
             c.settSpell.emit(index,sp1)
             index = index +1
             sp2 = player.get("summonerSpells").get("summonerSpellTwo").get("displayName")
+            logging.debug('enemy'+sp2)
             dataholder.addSpell(index, SummonerSpell(champ, sp2, index))
+            #dataholder.spells[index] = SummonerSpell(champ, sp2, index)
             c.settSpell.emit(index,sp2)
             index = index +1
+            #dataholder.spells[index] = UltSpell(champ, 110, ultindex)
             dataholder.addSpell(ultindex,UltSpell(champ,110,ultindex))
-            lvl = player.get("level","")
-            dataholder.setLvl(champ, lvl)
             #set sp1, sp2, champName in window (create new setterWindow with list of champions and spells)
             c.setterChampion.emit(ultindex-10,champ)
             ultindex = ultindex + 1
+            logging.debug('enemy done')
     print('done loading')
     topic = str(hashNames(li))
+    logging.debug('sucessfull loading with api')
     return topic, str(java_string_hashcode(activeplayer))
 def on_message(client, userdata, message):
     msg = message.payload.decode("utf-8")
@@ -663,6 +669,7 @@ class Mqttclient():
         client.subscribe(self.topic)
         client.loop_start()
         self.clientHolder = client
+        logging.debug('sucessfull mqtt connect')
     def send(self,msg):
         #print('sending', msg)
         if self.clientHolder is not None:
@@ -700,6 +707,7 @@ def hashNames(li):
 activeGameFound = False
 tries = 1
 def testConnection(s):
+    logging.debug('trying to find game/ updating time and levels')
     global activeGameFound
     #print(activeGameFound)
     global tries
@@ -709,6 +717,7 @@ def testConnection(s):
             return
         if activeGameFound is False:
             activeGameFound = True
+            logging.debug('connected to game')
             j = json.loads(r.content)
             currentTime = j.get("gameTime")
             gameTime.setGameTime(currentTime)
@@ -717,6 +726,7 @@ def testConnection(s):
             tries = 1
             startShowTrackThread()
             return
+        logging.debug('game is running, updating time and level')
         j = json.loads(r.content)
         currentTime = j.get("gameTime")
         gameTime.setGameTime(currentTime)
@@ -742,9 +752,9 @@ def testConnection(s):
         activeGameFound = False
         return
 def gameCheck(s):
-    testConnection(s)
-    time.sleep(10)
-    gameCheck(s)
+    while True:
+        testConnection(s)
+        time.sleep(10)
 def startThreads():
     s = requests.Session()
     t = threading.Thread(name='activeGameSearch', target = lambda: gameCheck(s))
@@ -754,20 +764,22 @@ def startThreads():
     t3.setDaemon(True)
     t3.start()
 def startShowTrackThread():
-    t2 = threading.Thread(name='advanceTime', target = advanceGameTime)
+    t2 = threading.Thread(name='advanceTime', target = gameTimeThread)
     t2.setDaemon(True)
     t2.start()
+def gameTimeThread():
+    global activeGameFound
+    while activeGameFound:
+        time.sleep(1)
+        timeAndShow()
+    logging.error('gameTime Thread active game lost ')
 import keyboard
 hotkeyFilePath = ''
 def loadHotkey():
     global hotkeyFilePath
-    postxtdir = os.path.join(os.getenv('APPDATA'), "SummonerTrackerOverlay")
-    hotkeyFilePath = os.path.join(postxtdir, "hotkey.txt")
+    hotkeyFilePath = os.path.join(appdatadir.overlaydir, "hotkey.txt")
     keys = '^'
-    try:
-        os.mkdir(postxtdir)
-    except FileExistsError:
-        pass
+
     try:
         with open(hotkeyFilePath) as f:
             keys = f.read()
@@ -781,7 +793,26 @@ def reactToHotKey():
     if activeGameFound:
         c.hotkeyklicked.emit()
 
+class AppDataDir():
+    def __init__(self):
+        self.overlaydir = os.path.join(os.getenv('APPDATA'), "SummonerTrackerOverlay")
+appdatadir = AppDataDir()
 if __name__ == '__main__':
+    import logging
+    try:
+        os.mkdir(appdatadir.overlaydir)
+    except FileExistsError:
+        pass
+    debugpath = os.path.join(appdatadir.overlaydir, "debug.log")
+    logging.basicConfig(
+        level=logging.DEBUG,
+        format="%(asctime)s [%(levelname)s] %(message)s",
+        handlers=[
+            logging.FileHandler(debugpath),
+            logging.StreamHandler()
+        ]
+    )
+
     startThreads()
     app = QApplication([])
     setterWindow = SetterWindow()
