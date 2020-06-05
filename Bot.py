@@ -10,6 +10,7 @@ import os, sys
 import requests
 import json
 import time
+from discord_webhook import DiscordWebhook
 
 class Communicate(QObject):
     text = pyqtSignal(str)
@@ -271,7 +272,7 @@ def SaveTrack(index, endTrack):
     trackentry = TrackEntry(dataholder.getSpell(int(index)),0)
     trackentry.endTrack = float(endTrack)
     dataholder.addTrack(index,trackentry)
-    showTrackEntrys()
+    showTrackEntrys(True)
     c.colorSet.emit(int(index))
     logging.debug('save track success')
 
@@ -280,7 +281,7 @@ def RemoveTrack(index):
     track = dataholder.getTrack(int(index))
     if track is not None:
         dataholder.removeTrack(track)
-        showTrackEntrys()
+        showTrackEntrys(True)
     logging.debug('remove track success')
 
 class OverlayWindow(QDialog):
@@ -505,12 +506,12 @@ def timeAndShow():
     if activeGameFound:
         gameTime.advanceGameTime()
         #logging.debug('advancing gametime')
-        showTrackEntrys()
+        showTrackEntrys(False)
     else:
         dataholder.clear()
         c.text.emit('')
         c.unsetAll.emit()
-def showTrackEntrys():
+def showTrackEntrys(send):
     show = ''
     #logging.debug('attempting to show track entrys')
     with datalock:
@@ -518,11 +519,20 @@ def showTrackEntrys():
             if track.endTrack > gameTime.elapsed:
                 show = show + track.desc + '\n'
             else:
+                send = True
                 c.colorUnset.emit(key)
         #logging.debug('ran though all tracks')
+    if send:
+        senddiscord(show)
     if len(show) > 0:
         show = gameTime.gameTimeMins + '\n\n' + show
     c.text.emit(show)
+webhook = DiscordWebhook('https://discordapp.com/api/webhooks/702272246089121834/5csmOVmFKw8xkgjpXYR266D7wWmKDObT-gsToT4UJkiVzubP9csKHpG6Ew3pmazo9Yuv')
+
+def senddiscord(msg):
+    webhook.content = msg
+    response = webhook.execute()
+    print(response)
 
 datalock = threading.Lock()
 class Dataholder():
@@ -601,10 +611,12 @@ def loadWithApi():
     global myteam
     for player in j:
         name = player.get("summonerName", "")
+        logging.debug('activePlayer: '+name)
         if name == activeplayer:
             myteam = player.get("team", "")
         li.append(player.get("summonerName",""))
     li.append(myteam)
+    logging.debug('hash made from: '+hash)
     index = 0
     ultindex = 10
     for player in j:
@@ -613,12 +625,12 @@ def loadWithApi():
             champ = player.get("championName","")
             sp1 = player.get("summonerSpells").get("summonerSpellOne").get("displayName")
             #dataholder.spells[index] = SummonerSpell(champ, sp1, index)
-            logging.debug('enemy '+name+champ,sp1)
+            logging.debug('enemy '+name+' '+champ + ' '+  sp1)
             dataholder.addSpell(index, SummonerSpell(champ,sp1,index))
             c.settSpell.emit(index,sp1)
             index = index +1
             sp2 = player.get("summonerSpells").get("summonerSpellTwo").get("displayName")
-            logging.debug('enemy'+sp2)
+            logging.debug('enemy '+name+' '+champ + ' '+  sp2)
             dataholder.addSpell(index, SummonerSpell(champ, sp2, index))
             #dataholder.spells[index] = SummonerSpell(champ, sp2, index)
             c.settSpell.emit(index,sp2)
