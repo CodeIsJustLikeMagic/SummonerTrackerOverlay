@@ -251,10 +251,12 @@ class SetterWindow(QDialog):
             #print('idle detected')
             self.hide()
     def StartSpellTrack(self,index,modifier):
+        logging.debug('starting spell track')
         self.lastAction = time.time()
         self.waitandSeeIfIdle()
         spell = dataholder.getSpell(index)
         if spell == None:
+            logging.debug('spell not found')
             return
         trackentry = (TrackEntry(spell,modifier))
         old = dataholder.getTrack(index)
@@ -377,6 +379,7 @@ class OverlayWindow(QDialog):
             self.statuslbl.setHidden(False)
             self.statuslbl.setText(m)
     def closeEvent(self, event) -> None:
+        logging.debug('closeing Overlay')
         mqttclient.disconnectmqtt()
         c.exitC.emit()
         event.accept()
@@ -474,6 +477,8 @@ class TrackEntry():
 class SummonerSpell():
     def __init__(self, cham,spellname, buttonindex):
         self.champion = cham
+        if spellDatabase.get(spellname):
+            logging.debug('spell '+spellname+'doesnt exist in database')
         self.spellname = spellDatabase.get(spellname).shortName
         self.cd = spellDatabase.get(spellname).cd
         self.index = buttonindex
@@ -500,6 +505,7 @@ class GameTime():
 
 gameTime = GameTime()
 def timeAndShow():
+    logging.debug('running timeAndShow')
     global activeGameFound
     #logging.debug('time and Show: activeGameFound ' + str(activeGameFound))
     if activeGameFound:
@@ -601,10 +607,12 @@ def loadWithApi():
     global myteam
     for player in j:
         name = player.get("summonerName", "")
+        logging.debug('activeplayer '+name)
         if name == activeplayer:
             myteam = player.get("team", "")
         li.append(player.get("summonerName",""))
     li.append(myteam)
+    logging.debug('using for topic: '+li)
     index = 0
     ultindex = 10
     for player in j:
@@ -613,12 +621,12 @@ def loadWithApi():
             champ = player.get("championName","")
             sp1 = player.get("summonerSpells").get("summonerSpellOne").get("displayName")
             #dataholder.spells[index] = SummonerSpell(champ, sp1, index)
-            logging.debug('enemy '+name+champ,sp1)
+            logging.debug('enemy '+name+' '+champ+''+sp1)
             dataholder.addSpell(index, SummonerSpell(champ,sp1,index))
             c.settSpell.emit(index,sp1)
             index = index +1
             sp2 = player.get("summonerSpells").get("summonerSpellTwo").get("displayName")
-            logging.debug('enemy'+sp2)
+            logging.debug('enemy '+name+' '+champ+''+sp2)
             dataholder.addSpell(index, SummonerSpell(champ, sp2, index))
             #dataholder.spells[index] = SummonerSpell(champ, sp2, index)
             c.settSpell.emit(index,sp2)
@@ -634,6 +642,7 @@ def loadWithApi():
     logging.debug('sucessfull loading with api')
     return topic, str(java_string_hashcode(activeplayer))
 def on_message(client, userdata, message):
+    logging.debug('reciveing mqtt message')
     msg = message.payload.decode("utf-8")
     #print('message', msg)
     msg = msg.split(' ')
@@ -752,10 +761,12 @@ def testConnection(s):
         activeGameFound = False
         return
 def gameCheck(s):
+    logging.debug('gameCheck thread loop alive')
     while True:
         testConnection(s)
         time.sleep(10)
 def startThreads():
+    logging.debug('starting threads')
     s = requests.Session()
     t = threading.Thread(name='activeGameSearch', target = lambda: gameCheck(s))
     t.setDaemon(True)
@@ -764,6 +775,7 @@ def startThreads():
     t3.setDaemon(True)
     t3.start()
 def startShowTrackThread():
+    logging.debug('starging show and time thread')
     t2 = threading.Thread(name='advanceTime', target = gameTimeThread)
     t2.setDaemon(True)
     t2.start()
