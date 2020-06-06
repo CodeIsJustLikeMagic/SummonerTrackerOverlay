@@ -602,17 +602,17 @@ def loadWithApi():
         return None,None
     activeplayer = requests.get("https://127.0.0.1:2999/liveclientdata/activeplayername", verify = False)
     activeplayer = json.loads(activeplayer.content)
+    logging.debug('activeplayer ' + activeplayer)
     j = json.loads(r.content)
     li = []
     global myteam
     for player in j:
         name = player.get("summonerName", "")
-        logging.debug('activeplayer '+name)
         if name == activeplayer:
             myteam = player.get("team", "")
         li.append(player.get("summonerName",""))
     li.append(myteam)
-    logging.debug('using for topic: '+li)
+    logging.debug('using for topic: '+str(li))
     index = 0
     ultindex = 10
     for player in j:
@@ -674,7 +674,6 @@ class Mqttclient():
         client.connect(broker_address)
         self.connectionInfo = 'connected\n'+'topic ' + self.topic + '\nclient id '+self.clientID
         c.showmqtt.emit()
-        #print('mqtt connected.')
         client.subscribe(self.topic)
         client.loop_start()
         self.clientHolder = client
@@ -730,8 +729,8 @@ def testConnection(s):
             j = json.loads(r.content)
             currentTime = j.get("gameTime")
             gameTime.setGameTime(currentTime)
-            loadLevels()
             mqttclient.connect()
+            loadLevels()
             tries = 1
             startShowTrackThread()
             return
