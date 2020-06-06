@@ -606,17 +606,17 @@ def loadWithApi():
         return None,None
     activeplayer = requests.get("https://127.0.0.1:2999/liveclientdata/activeplayername", verify = False)
     activeplayer = json.loads(activeplayer.content)
+    logging.debug('activePlayer: ' + activeplayer)
     j = json.loads(r.content)
     li = []
     global myteam
     for player in j:
         name = player.get("summonerName", "")
-        logging.debug('activePlayer: '+name)
         if name == activeplayer:
             myteam = player.get("team", "")
         li.append(player.get("summonerName",""))
     li.append(myteam)
-    logging.debug('hash made from: '+hash)
+    logging.debug('hash made from: '+str(li))
     index = 0
     ultindex = 10
     for player in j:
