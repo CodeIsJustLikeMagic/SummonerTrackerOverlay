@@ -28,6 +28,7 @@ class Communicate(QObject):
     status = pyqtSignal(str)
     unsetAll = pyqtSignal()
     showmqtt = pyqtSignal()
+    updateColors = pyqtSignal()
 
 
 c = Communicate()
@@ -154,6 +155,7 @@ class SetterWindow(QDialog):
         c.unmovable.connect(self.unmovable)
         c.hotkeyklicked.connect(self.showOnKeyboardPress)
         c.unsetAll.connect(self.clear)
+        c.updateColors.connect(self.updateColors)
         self.lastAction = time.time()
         self.show()
         try:
@@ -189,6 +191,20 @@ class SetterWindow(QDialog):
             btn.setStyleSheet(self.unSetStyle)
         for num,btn in enumerate(self.ult,start=0):
             btn.setStyleSheet(self.unSetStyle)
+    def updateColors(self):
+        for btn in self.spellButtons:
+            btn.setStyleSheet(self.unSetStyle)
+        for btn in self.minButtons:
+            btn.setStyleSheet(self.unSetStyle)
+        for num,btn in enumerate(self.ult,start=0):
+            btn.setStyleSheet(self.unSetStyle)
+
+        with datalock:
+            for id, track in dataholder.tracks.items():
+                if track.endTrack > gameTime.elapsed:
+                    btnindex = dataholder.buttons.get(id)
+                    self.set(btnindex)
+
     def unset(self, index):
         if index >=10:
             self.ult[int(index)-10].setStyleSheet(self.unSetStyle)
@@ -269,33 +285,36 @@ class SetterWindow(QDialog):
         logging.debug('st0 starting spell track (0/10)')
         self.lastAction = time.time()
         self.waitandSeeIfIdle()
-        spell = dataholder.getSpell(index)
+        id = dataholder.getIdByBtnIndex(index)
+        spell = dataholder.getSpell(id)
         if spell is None:
             logging.debug('stError spell not found')
             return
         trackentry = (TrackEntry(spell,modifier))
-        old = dataholder.getTrack(index)
+        old = dataholder.getTrack(id)
         if old is not None:
             if old.endTrack > gameTime.elapsed:
-                mqttclient.send('r '+str(index))
+                mqttclient.send('r '+str(id))
                 return
-        mqttclient.send('a '+str(index)+' '+str(trackentry.endTrack))
-        logging.debug('st3 send qmqtt')
+        mqttclient.send('a '+str(id)+' '+str(trackentry.endTrack))
+        logging.debug('st3 send mqtt')
 
 
 
-def SaveTrack(index, endTrack):
+def SaveTrack(id, endTrack):
     logging.debug('st5 attempting to save track (mqtt)')
-    trackentry = TrackEntry(dataholder.getSpell(int(index)),0)
-    trackentry.endTrack = float(endTrack)
-    dataholder.addTrack(index,trackentry)
+    buttonIndex = dataholder.getButton(id)
+    trackentry = TrackEntry(dataholder.getSpell(id),0)
+    trackentry.updateEndTrack(float(endTrack))
+    t = trackentry
+    dataholder.addTrack(id,trackentry)
     showTrackEntrys()
-    c.colorSet.emit(int(index))
+    c.colorSet.emit(int(buttonIndex))
     logging.debug('st10 save track success')
 
-def RemoveTrack(index):
+def RemoveTrack(id):
     logging.debug('st3 attempting to remove track (mqtt)')
-    track = dataholder.getTrack(int(index))
+    track = dataholder.getTrack(id)
     if track is not None:
         dataholder.removeTrack(track)
         showTrackEntrys()
@@ -491,26 +510,30 @@ spellDatabase = {
 class TrackEntry():
     def __init__(self,spell,modifier):
         now = gameTime.elapsed
-        self.endTrack = now + spell.cd - modifier
-        self.endTrackMins = time.strftime("%M:%S", time.gmtime(self.endTrack))
+        self.endTrack = now + spell.cd
+        self.endTrack = self.endTrack - modifier
         self.spell = spell
-        self.desc = spell.champion + ' ' + spell.spellname+' '+self.endTrackMins
 
+        self.updateEndTrack(self.endTrack)
+    def updateEndTrack(self, endTrack):
+        self.endTrack = endTrack
+        self.endTrackMins = time.strftime("%M:%S", time.gmtime(self.endTrack))
+        self.desc = self.spell.champion + ' ' + self.spell.spellname + ' ' + self.endTrackMins
 class SummonerSpell():
-    def __init__(self, cham, spellname, buttonindex):
+    def __init__(self, cham, spellname, mqttdesc):
         self.champion = cham
         if spellDatabase.get(spellname) is None:
             logging.debug('     gc6 ssError spell '+spellname+' doesnt exist in database')
         self.spellname = spellDatabase.get(spellname).shortName
         self.cd = spellDatabase.get(spellname).cd
-        self.index = buttonindex
-        logging.debug('     gc6 ss0 created summonerspell '+self.spellname+' '+str(self.cd)+' '+str(self.index) +'(0/1)')
+        self.mqttdesc = mqttdesc
+        logging.debug('     gc6 ss0 created summonerspell '+self.spellname+' '+str(self.cd)+' '+str(self.mqttdesc) +'(0/1)')
 class UltSpell():
-    def __init__(self,cham,cd,buttonindex):
+    def __init__(self,cham,cd,mqttdesc):
         self.champion = cham
         self.spellname = 'ult'
         self.cd = cd
-        self.index = buttonindex
+        self.mqttdesc = mqttdesc
 
 class GameTime():
     def __init__(self):
@@ -540,11 +563,12 @@ def timeAndShow():
 def showTrackEntrys():
     show = ''
     with datalock:
-        for key,track in dataholder.tracks.items():
+        for id,track in dataholder.tracks.items():
             if track.endTrack > gameTime.elapsed:
                 show = show + track.desc + '\n'
             else:
-                c.colorUnset.emit(key)
+                btnindex = dataholder.buttons.get(id)
+                c.colorUnset.emit(btnindex)
     if len(show) > 0:
         show = gameTime.gameTimeMins + '\n\n' + show
     c.text.emit(show)
@@ -556,44 +580,60 @@ class Dataholder():
             self.spells={}
             self.lvls={}
             self.tracks={}
+            self.champions={}
+            self.buttons={}
     def clear(self):
         with datalock:
             logging.debug('clearing data')
             self.spells={}
             self.lvls={}
-            self.tracks = {}
-    def addSpell(self,index, spell):
+            self.tracks={}
+            self.buttons={}
+    def addButton(self, id, btnindex):
         with datalock:
-            self.spells[index] = spell
+            self.buttons[id] = btnindex
+    def addSpell(self,id, spell):
+        with datalock:
+            self.spells[id] = spell
             logging.debug('     gc6 ss1 spell saved ' +spell.spellname)
     def setLvl(self, champion, lvl):
         with datalock:
             self.lvls[champion] = lvl
         logging.debug(' gc* ll* set level for '+ champion + ' '+str(lvl))
-    def addTrack(self, index, trackentry):
+    def addTrack(self, id, trackentry):
         logging.debug('st7 attempting to add track')
         with datalock:
             logging.debug('st8 add track')
-            dataholder.tracks[int(index)] = trackentry
+            dataholder.tracks[id] = trackentry
             sortTracks()
     def removeTrack(self, track):
         with datalock:
             logging.debug('st? removeTrack')
             track.endTrack = float(0)
             sortTracks()
-    def getSpell(self, index):
+    def getSpell(self, id):
         logging.debug('st1+6 attempting to get spell')
         with datalock:
-            ret = self.spells.get(index)
+            ret = self.spells.get(id)
         return ret
-
-    def getTrack(self,index):
+    def getTrack(self,id):
         with datalock:
-            ret = self.tracks.get(index)
+            ret = self.tracks.get(id)
         return ret
 
+    def getButton(self, id):
+        with datalock:
+            ret= self.buttons.get(id)
+        return ret
+    def getIdByBtnIndex(self, index):
+        with datalock:
+            ret = dict((v,k)for k,v in self.buttons.items()).get(index)
+        return ret
+    def clearButtons(self):
+        with datalock:
+            self.buttons={}
 def sortTracks(): # called while thread is locked
-    logging.debug('st9 sorting tracks')
+    logging.debug('st?9 sorting tracks')
     dataholder.tracks = dict(sorted(dataholder.tracks.items(), key=lambda x: x[1].endTrack))
 
 dataholder = Dataholder()
@@ -635,26 +675,27 @@ def loadWithApi():
     logging.debug('gc5 using for topic: '+str(li))
     index = 0
     ultindex = 10
+    dataholder.clearButtons()
     for player in j:
         if player.get("team","") != myteam:
             name = player.get("summonerName","")
             champ = player.get("championName","")
             sp1 = player.get("summonerSpells").get("summonerSpellOne").get("displayName")
-            #dataholder.spells[index] = SummonerSpell(champ, sp1, index)
             logging.debug(' gc6_0 enemy '+name+' '+champ+' '+sp1)
-            dataholder.addSpell(index, SummonerSpell(champ,sp1,index))
+            dataholder.addSpell(champ + 'Spell1', SummonerSpell(champ,sp1,index))
+            dataholder.addButton(champ + 'Spell1',index)
             temp = c
             c.settSpell.emit(index,sp1)
             index = index +1
             sp2 = player.get("summonerSpells").get("summonerSpellTwo").get("displayName")
             logging.debug(' gc6_1 enemy '+name+' '+champ+' '+sp2)
-            dataholder.addSpell(index, SummonerSpell(champ, sp2, index))
-            #dataholder.spells[index] = SummonerSpell(champ, sp2, index)
+            dataholder.addSpell(champ + 'Spell2', SummonerSpell(champ, sp2, index))
+            dataholder.addButton(champ + 'Spell2', index)
             c.settSpell.emit(index,sp2)
             index = index +1
-            #dataholder.spells[index] = UltSpell(champ, 110, ultindex)
-            dataholder.addSpell(ultindex,UltSpell(champ,110,ultindex))
-            #set sp1, sp2, champName in window (create new setterWindow with list of champions and spells)
+            dataholder.addSpell(champ + 'Ult', UltSpell(champ,110,ultindex))
+            dataholder.addButton(champ + 'Ult', ultindex)
+            #set sp1, sp2, champName in window (change setterWindow with list of champions and spells)
             c.setterChampion.emit(ultindex-10,champ)
             ultindex = ultindex + 1
             logging.debug(' gc6_2 enemy done')
@@ -662,8 +703,8 @@ def loadWithApi():
     logging.debug('gc7 sucessfull loading with api')
     return topic, str(java_string_hashcode(activeplayer))
 def on_message(client, userdata, message):
-    logging.debug('st4 reciveing mqtt message')
     msg = message.payload.decode("utf-8")
+    logging.debug('st4 reciveing mqtt message '+str(msg))
     #print('message', msg)
     msg = msg.split(' ')
     if msg[0] == 'a':
@@ -698,7 +739,7 @@ class Mqttclient():
         logging.debug('gc8 sucessfull mqtt connect')
     def send(self,msg):
         if self.clientHolder is not None:
-            logging.debug('st2 publishing')
+            logging.debug('st2 publishing '+str(msg))
             self.clientHolder.publish(self.topic, msg)
     def disconnectmqtt(self):
         if self.clientHolder is not None:
@@ -708,6 +749,8 @@ class Mqttclient():
         self.disconnectmqtt()
         topicsuffix,clientIdSuffix = loadWithApi()
         self.connect(topicsuffix,clientIdSuffix)
+        #reset the colors of buttons
+        c.updateColors.emit()
 mqttclient = Mqttclient()
 
 def java_string_hashcode(s):
