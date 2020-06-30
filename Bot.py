@@ -89,7 +89,7 @@ class SetterWindow(QDialog):
             champs1.setStyleSheet("color: rgb(230,230,230); background-color: rgb(150,150,150)")
             grid_layout.addWidget(champs1, x, 1)
             self.spellButtons.append(champs1)
-            minButton = QPushButton("-1 min")
+            minButton = QPushButton("-30 sec")
             minButton.setFont(font)
             effect = QGraphicsDropShadowEffect()
             effect.setBlurRadius(0)
@@ -127,16 +127,16 @@ class SetterWindow(QDialog):
         self.spellButtons[8].clicked.connect(lambda: self.StartSpellTrack(8,7))
         self.spellButtons[9].clicked.connect(lambda: self.StartSpellTrack(9,7))
 
-        self.minButtons[0].clicked.connect(lambda: self.StartSpellTrack(0,60))
-        self.minButtons[1].clicked.connect(lambda: self.StartSpellTrack(1,60))
-        self.minButtons[2].clicked.connect(lambda: self.StartSpellTrack(2,60))
-        self.minButtons[3].clicked.connect(lambda: self.StartSpellTrack(3,60))
-        self.minButtons[4].clicked.connect(lambda: self.StartSpellTrack(4,60))
-        self.minButtons[5].clicked.connect(lambda: self.StartSpellTrack(5,60))
-        self.minButtons[6].clicked.connect(lambda: self.StartSpellTrack(6,60))
-        self.minButtons[7].clicked.connect(lambda: self.StartSpellTrack(7,60))
-        self.minButtons[8].clicked.connect(lambda: self.StartSpellTrack(8,60))
-        self.minButtons[9].clicked.connect(lambda: self.StartSpellTrack(9,60))
+        self.minButtons[0].clicked.connect(lambda: self.ModifySpellTrack(0))
+        self.minButtons[1].clicked.connect(lambda: self.ModifySpellTrack(1))
+        self.minButtons[2].clicked.connect(lambda: self.ModifySpellTrack(2))
+        self.minButtons[3].clicked.connect(lambda: self.ModifySpellTrack(3))
+        self.minButtons[4].clicked.connect(lambda: self.ModifySpellTrack(4))
+        self.minButtons[5].clicked.connect(lambda: self.ModifySpellTrack(5))
+        self.minButtons[6].clicked.connect(lambda: self.ModifySpellTrack(6))
+        self.minButtons[7].clicked.connect(lambda: self.ModifySpellTrack(7))
+        self.minButtons[8].clicked.connect(lambda: self.ModifySpellTrack(8))
+        self.minButtons[9].clicked.connect(lambda: self.ModifySpellTrack(9))
 
         self.ult[0].clicked.connect(lambda: self.StartSpellTrack(10,7))
         self.ult[1].clicked.connect(lambda: self.StartSpellTrack(11,7))
@@ -280,6 +280,27 @@ class SetterWindow(QDialog):
         if time.time()-self.lastAction >= 5.8:
             #print('idle detected')
             self.hide()
+    def ModifySpellTrack(self,index):
+        logging.debug('st0 modify spell -30 sec')
+        self.lastAction = time.time()
+        self.waitandSeeIfIdle()
+        id = dataholder.getIdByBtnIndex(index)
+        spell = dataholder.getSpell(id)
+        if spell is None:
+            logging.debug('stError spell not found')
+            return
+        old = dataholder.getTrack(id)
+        if old is not None:
+            if old.endTrack > gameTime.elapsed:
+                #modify spell
+                modendtrack = old.endTrack -30
+                mqttclient.send('m_'+str(id)+'_'+str(modendtrack))
+                logging.debug('st3 send mqtt modified old')
+                return
+        trackentry = TrackEntry(spell, 30)
+        mqttclient.send('a_' + str(id) + '_' + str(trackentry.endTrack))
+        logging.debug('st3 send -30 sec mqtt')
+
     def StartSpellTrack(self,index,modifier):
         logging.debug('st0 starting spell track (0/10)')
         self.lastAction = time.time()
@@ -289,12 +310,12 @@ class SetterWindow(QDialog):
         if spell is None:
             logging.debug('stError spell not found')
             return
-        trackentry = (TrackEntry(spell,modifier))
         old = dataholder.getTrack(id)
         if old is not None:
             if old.endTrack > gameTime.elapsed:
                 mqttclient.send('r_'+str(id))
                 return
+        trackentry = TrackEntry(spell, modifier)
         mqttclient.send('a_'+str(id)+'_'+str(trackentry.endTrack))
         logging.debug('st3 send mqtt')
 
@@ -318,7 +339,12 @@ def RemoveTrack(id):
         dataholder.removeTrack(track)
         showTrackEntrys()
     logging.debug('st8 remove track success')
-
+def ModifyTrack(id, endTrack):
+    track = dataholder.getTrack(id)
+    if track is not None:
+        track.updateEndTrack(float(endTrack))
+        dataholder.addTrack(id,track)
+        showTrackEntrys()
 class OverlayWindow(QDialog):
 
     def __init__(self):
@@ -713,6 +739,9 @@ def on_message(client, userdata, message):
         return
     if msg[0] == 'r':
         RemoveTrack(msg[1])
+        return
+    if msg[0] == 'm':
+        ModifyTrack(msg[1],msg[2])
         return
     return
 class Mqttclient():
