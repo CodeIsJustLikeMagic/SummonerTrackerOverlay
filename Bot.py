@@ -173,7 +173,6 @@ class SetterWindow(QDialog):
 
     def showOnKeyboardPress(self):
         if self.isHidden():
-            print('showing on keypress')
             self.lastAction = time.time()
             self.waitandSeeIfIdle()
             self.setHidden(False)
@@ -294,9 +293,9 @@ class SetterWindow(QDialog):
         old = dataholder.getTrack(id)
         if old is not None:
             if old.endTrack > gameTime.elapsed:
-                mqttclient.send('r '+str(id))
+                mqttclient.send('r_'+str(id))
                 return
-        mqttclient.send('a '+str(id)+' '+str(trackentry.endTrack))
+        mqttclient.send('a_'+str(id)+'_'+str(trackentry.endTrack))
         logging.debug('st3 send mqtt')
 
 
@@ -513,7 +512,7 @@ class TrackEntry():
         self.endTrack = now + spell.cd
         self.endTrack = self.endTrack - modifier
         self.spell = spell
-
+        self.endTrack = float("{:.2f}".format(self.endTrack))
         self.updateEndTrack(self.endTrack)
     def updateEndTrack(self, endTrack):
         self.endTrack = endTrack
@@ -706,7 +705,7 @@ def on_message(client, userdata, message):
     msg = message.payload.decode("utf-8")
     logging.debug('st4 reciveing mqtt message '+str(msg))
     #print('message', msg)
-    msg = msg.split(' ')
+    msg = msg.split('_')
     if msg[0] == 'a':
         #index added
         #print(msg[1])
@@ -809,7 +808,6 @@ def testConnection(s):
         #print(tries)
         if tries == 3 :
             #print(tries, 1)
-            print('^^123 clear text. to many tries',tries)
             c.status.emit('')
             tries = tries +1
         elif tries == 2:
