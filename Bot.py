@@ -706,13 +706,20 @@ def loadWithApi():
             name = player.get("summonerName","")
             champ = player.get("championName","")
             sp1 = player.get("summonerSpells").get("summonerSpellOne").get("displayName")
+            sp2 = player.get("summonerSpells").get("summonerSpellTwo").get("displayName")
+
+            if sp2 == 'Flash':
+                temp = sp2
+                sp2 = sp1
+                sp1 = temp
+            print(sp1,sp2)
             logging.debug(' gc6_0 enemy '+name+' '+champ+' '+sp1)
             dataholder.addSpell(champ + 'Spell1', SummonerSpell(champ,sp1,index))
             dataholder.addButton(champ + 'Spell1',index)
             temp = c
             c.settSpell.emit(index,sp1)
             index = index +1
-            sp2 = player.get("summonerSpells").get("summonerSpellTwo").get("displayName")
+
             logging.debug(' gc6_1 enemy '+name+' '+champ+' '+sp2)
             dataholder.addSpell(champ + 'Spell2', SummonerSpell(champ, sp2, index))
             dataholder.addButton(champ + 'Spell2', index)
