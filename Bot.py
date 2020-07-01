@@ -1,6 +1,7 @@
 # Bot.py
 from datetime import datetime
 
+from PyQt5 import QtCore
 from PyQt5.QtGui import QFont, QIcon, QColor
 from PyQt5.QtWidgets import QApplication, QLabel, QDialog, QVBoxLayout, QSystemTrayIcon, QMenu, QDesktopWidget, \
     QGraphicsDropShadowEffect, QPushButton, QGridLayout
@@ -79,16 +80,16 @@ class SetterWindow(QDialog):
         self.spellButtons = []
         self.minButtons = []
         for x in range(10):
-            champs1 = QPushButton("spell")
-            champs1.setFont(font)
+            spellButton = SpellButton("spell")
+            spellButton.setFont(font)
             effect = QGraphicsDropShadowEffect()
             effect.setBlurRadius(0)
             effect.setColor(QColor(0, 0, 0, 255))
             effect.setOffset(1)
-            champs1.setGraphicsEffect(effect)
-            champs1.setStyleSheet("color: rgb(230,230,230); background-color: rgb(150,150,150)")
-            grid_layout.addWidget(champs1, x, 1)
-            self.spellButtons.append(champs1)
+            spellButton.setGraphicsEffect(effect)
+            spellButton.setStyleSheet("color: rgb(230,230,230); background-color: rgb(150,150,150)")
+            grid_layout.addWidget(spellButton, x, 1)
+            self.spellButtons.append(spellButton)
             minButton = QPushButton("-30 sec")
             minButton.setFont(font)
             effect = QGraphicsDropShadowEffect()
@@ -144,6 +145,9 @@ class SetterWindow(QDialog):
         self.ult[3].clicked.connect(lambda: self.StartSpellTrack(13,7))
         self.ult[4].clicked.connect(lambda: self.StartSpellTrack(14,7))
 
+        for btn in self.spellButtons:
+            btn.installEventFilter(self)
+
         self.postxtfilepath = os.path.join(appdatadir.overlaydir,"pos2.txt")
         c.setterChampion.connect(lambda index, val: self.setchampionlabel(index,val))
         c.settSpell.connect(lambda index,val: self.setspelllabel(index,val))
@@ -170,6 +174,21 @@ class SetterWindow(QDialog):
             pass
         self.hide()
         logging.debug('m1 setter window created')
+        self.setdict={}
+
+    def eventFilter(self, object, event):
+        if object.set:
+            if event.type() == QtCore.QEvent.HoverEnter:
+                object.setStyleSheet("color: rgb(230,230,230); background-color: rgb(200,50,50)")
+                object.setText('X')
+                return True
+            if event.type() == QtCore.QEvent.HoverLeave:
+                if object.set:
+                    object.setStyleSheet(self.setStyle)
+                object.setText(object.spellName)
+                return True
+        return False
+
 
     def showOnKeyboardPress(self):
         if self.isHidden():
@@ -193,6 +212,7 @@ class SetterWindow(QDialog):
     def updateColors(self):
         for btn in self.spellButtons:
             btn.setStyleSheet(self.unSetStyle)
+            btn.set = False
         for btn in self.minButtons:
             btn.setStyleSheet(self.unSetStyle)
         for num,btn in enumerate(self.ult,start=0):
@@ -208,20 +228,26 @@ class SetterWindow(QDialog):
         if index >=10:
             self.ult[int(index)-10].setStyleSheet(self.unSetStyle)
             return
-        self.spellButtons[index].setStyleSheet(self.unSetStyle)
-        self.minButtons[index].setStyleSheet(self.unSetStyle)
+        btn = self.spellButtons[index]
+        btn.setStyleSheet(self.unSetStyle)
+        btn.set = False
+        btn.setText(btn.spellName)
     def set(self, index):
         if index >=10:
             self.ult[index-10].setStyleSheet(self.setStyle)
             return
-        self.spellButtons[index].setStyleSheet(self.setStyle)
-        self.minButtons[index].setStyleSheet(self.setStyle)
+        btn = self.spellButtons[index]
+        btn.setStyleSheet(self.setStyle)
+        btn.set = True
+        #self.minButtons[index].setStyleSheet(self.setStyle)
 
     def setchampionlabel(self,index,val):
         self.championLabels[index].setText(val)
     def setspelllabel(self,index,val):
         logging.debug('     gc* setting spell label '+str(index)+ ' '+ str(val))
         self.spellButtons[index].setText(val)
+        if index < 10:
+            self.spellButtons[index].spellName = val
 
     def resetPos(self):
         centerPoint = QDesktopWidget().availableGeometry().center()
@@ -319,6 +345,11 @@ class SetterWindow(QDialog):
         mqttclient.send('a_'+str(id)+'_'+str(trackentry.endTrack))
         logging.debug('st3 send mqtt')
 
+class SpellButton(QPushButton):
+    def __init__(self,text):
+        super().__init__(text)
+        self.spellName = 'spell'
+        self.set = False
 
 
 def SaveTrack(id, endTrack):
@@ -740,8 +771,6 @@ def on_message(client, userdata, message):
     #print('message', msg)
     msg = msg.split('_')
     if msg[0] == 'a':
-        #index added
-        #print(msg[1])
         SaveTrack(msg[1], msg[2])
         return
     if msg[0] == 'r':
