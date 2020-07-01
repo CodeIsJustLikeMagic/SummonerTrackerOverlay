@@ -193,7 +193,7 @@ class SetterWindow(QDialog):
             return
         btn.setEnabled(False)
         print('disabled', index)
-        QTimer.singleShot(600, lambda: self.unblock(index))
+        QTimer.singleShot(1300, lambda: self.unblock(index))
     def unblock(self, index):
         spellbutton = self.getButton(index)
         spellbutton.setEnabled(True)
@@ -215,7 +215,6 @@ class SetterWindow(QDialog):
                 spellbutton.setText(spellbutton.spellName)
             return True
         return False
-
 
     def showOnKeyboardPress(self):
         if self.isHidden():
