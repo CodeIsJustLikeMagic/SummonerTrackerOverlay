@@ -585,18 +585,25 @@ class Spell():
         self.cd = cd
 spellDatabase = {
     'Heal':Spell('h',240),
-    'Ghost':Spell('ghost', 180),
+    'Ghost':Spell('ghost', 210),
     'Barrier': Spell('barr', 180),
     'Exhaust': Spell('exh', 210),
     'Clarity': Spell('clarity',240),
     'Flash':Spell('f',300),
+    'HexFlash': Spell('f',300),
     'Teleport': Spell('tp',240),
     'Smite':Spell('smite',15),
     'Cleanse': Spell('cleanse', 210),
     'Ignite':Spell('ign', 180),
     'Mark':Spell('mark', 48),
+    'Dash': Spell('mark',48),
     'Challenging Smite': Spell('smite',15),
-    'Chilling Smite': Spell('smite',15)
+    'Chilling Smite': Spell('smite',15),
+    'Poro Toss': Spell('p-mark',80),
+    'Poro Dash':Spell('p-dash',80),
+    'To the King!': Spell('king', 10),
+    'Resuscitate': Spell('rev', 100),
+    'Warp':Spell('warp',15)
 }
 
 class TrackEntry():
@@ -781,6 +788,7 @@ def loadWithApi():
                 sp1 = temp
             print(sp1,sp2)
             logging.debug(' gc6_0 enemy '+name+' '+champ+' '+sp1)
+
             dataholder.addSpell(champ + 'Spell1', SummonerSpell(champ,sp1,index))
             dataholder.addButton(champ + 'Spell1',index)
             temp = c
