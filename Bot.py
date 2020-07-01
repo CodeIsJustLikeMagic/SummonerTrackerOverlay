@@ -49,6 +49,7 @@ class SetterWindow(QDialog):
         self.ismovable = False
         self.setStyle = "color: rgb(150,150,150); background-color: rgb(90,90,90)"
         self.unSetStyle = "color: rgb(230,230,230); background-color: rgb(150,150,150)"
+        self.redStyle = "color: rgb(230,230,230); background-color: rgb(200,50,50)"
 
         font = QFont('Serif', 11)
         font.setWeight(62)
@@ -67,7 +68,7 @@ class SetterWindow(QDialog):
             champlbl.setGraphicsEffect(effect)
             grid_layout.addWidget(champlbl, x*2, 0)
             self.championLabels.append(champlbl)
-            champsult = QPushButton("ult")
+            champsult = SpellButton("ult")
             champsult.setFont(font)
             effect = QGraphicsDropShadowEffect()
             effect.setBlurRadius(0)
@@ -148,18 +149,20 @@ class SetterWindow(QDialog):
 
         for btn in self.spellButtons:
             btn.installEventFilter(self)
+        for btn in self.ult:
+            btn.installEventFilter(self)
 
         self.postxtfilepath = os.path.join(appdatadir.overlaydir,"pos2.txt")
         c.setterChampion.connect(lambda index, val: self.setchampionlabel(index,val))
         c.settSpell.connect(lambda index,val: self.setspelllabel(index,val))
         c.resetPos.connect(self.resetPos)
         c.move.connect(self.movable)
-        c.colorSet.connect(lambda index: self.set(index))
-        c.colorUnset.connect(lambda index: self.unset(index))
+        c.colorSet.connect(lambda index: self.setColorButton(index))
+        c.colorUnset.connect(lambda index: self.unsetColorButton(index))
         c.exitC.connect(self.close)
         c.unmovable.connect(self.unmovable)
         c.hotkeyklicked.connect(self.showOnKeyboardPress)
-        c.unsetAll.connect(self.clear)
+        c.unsetAll.connect(self.clearAllButtons)
         c.updateColors.connect(self.updateColors)
         c.block.connect(lambda index: self.blockButton(index))
         self.lastAction = time.time()
@@ -176,32 +179,40 @@ class SetterWindow(QDialog):
             pass
         self.hide()
         logging.debug('m1 setter window created')
-        self.setdict={}
-
+    def getButton(self, index):
+        if index >= 10:
+            return self.ult[index - 10]
+        else:
+            return self.spellButtons[index]
     def blockButton(self,index):
-        btn = self.spellButtons[index]
+        btn = self.getButton(index)
+        if btn.justPressed:
+            print('dont disable button', index)
+            btn.justPressed = False
+            print('just pressed false')
+            return
         btn.setEnabled(False)
         print('disabled', index)
         QTimer.singleShot(600, lambda: self.unblock(index))
     def unblock(self, index):
-        spellbutton = self.spellButtons[index]
+        spellbutton = self.getButton(index)
         spellbutton.setEnabled(True)
         if spellbutton.underMouse():
-            spellbutton.setStyleSheet("color: rgb(230,230,230); background-color: rgb(200,50,50)")
             spellbutton.setText('X')
+            spellbutton.setStyleSheet(self.redStyle)
         print('enabled', index)
     def eventFilter(self, spellbutton, event):
-        if spellbutton.set:
-            if event.type() == QtCore.QEvent.HoverEnter:
-                if spellbutton.isEnabled():
-                    spellbutton.setStyleSheet("color: rgb(230,230,230); background-color: rgb(200,50,50)")
-                    spellbutton.setText('X')
-                    return True
-            if event.type() == QtCore.QEvent.HoverLeave:
-                if spellbutton.set:
-                    spellbutton.setStyleSheet(self.setStyle)
-                spellbutton.setText(spellbutton.spellName)
+        if event.type() == QtCore.QEvent.HoverEnter:
+            here
+            if spellbutton.isEnabled() and spellbutton.set:
+                spellbutton.setStyleSheet(self.redStyle)
+                spellbutton.setText('X')
                 return True
+        if event.type() == QtCore.QEvent.HoverLeave:
+            if spellbutton.set:
+                spellbutton.setStyleSheet(self.setStyle)
+                spellbutton.setText(spellbutton.spellName)
+            return True
         return False
 
 
@@ -214,47 +225,53 @@ class SetterWindow(QDialog):
             self.hide()
         #show but dont steal focus on hotkeypressnnn
         #hide again if hotkey is pressed again
-    def clear(self):
+    def clearAllButtons(self):
         for num, lbl in enumerate(self.championLabels,start = 1):
             lbl.setText('player'+str(num))
         for btn in self.spellButtons:
             btn.setText('spell')
+            btn.spellName= 'spell'
+            btn.set = False
+            btn.justPressed = False
             btn.setStyleSheet(self.unSetStyle)
         for btn in self.minButtons:
             btn.setStyleSheet(self.unSetStyle)
         for num,btn in enumerate(self.ult,start=0):
             btn.setStyleSheet(self.unSetStyle)
+            btn.set = False
+            btn.justPressed = False
     def updateColors(self):
         for btn in self.spellButtons:
             btn.setStyleSheet(self.unSetStyle)
             btn.set = False
-        for btn in self.minButtons:
+        for btn in self.ult:
             btn.setStyleSheet(self.unSetStyle)
-        for num,btn in enumerate(self.ult,start=0):
-            btn.setStyleSheet(self.unSetStyle)
+            btn.set = False
 
         with datalock:
             for id, track in dataholder.tracks.items():
                 if track.endTrack > gameTime.elapsed:
                     btnindex = dataholder.buttons.get(id)
-                    self.set(btnindex)
+                    self.setColorButton(btnindex)
 
-    def unset(self, index):
-        if index >=10:
-            self.ult[int(index)-10].setStyleSheet(self.unSetStyle)
-            return
-        btn = self.spellButtons[index]
+    def unsetColorButton(self, index):
+        btn = self.getButton(index)
         btn.setStyleSheet(self.unSetStyle)
         btn.set = False
         btn.setText(btn.spellName)
-    def set(self, index):
-        if index >=10:
-            self.ult[index-10].setStyleSheet(self.setStyle)
-            return
-        btn = self.spellButtons[index]
-        btn.setStyleSheet(self.setStyle)
+    def setColorButton(self, index):
+        btn = self.getButton(index)
+        print('set Color')
         btn.set = True
-        #self.minButtons[index].setStyleSheet(self.setStyle)
+        if btn.justPressed:
+            if btn.underMouse():
+                btn.setText('X')
+                btn.setStyleSheet(self.redStyle)
+                return
+        btn.setStyleSheet(self.setStyle)
+
+        return
+
 
     def setchampionlabel(self,index,val):
         self.championLabels[index].setText(val)
@@ -315,7 +332,6 @@ class SetterWindow(QDialog):
                 return
 
     def waitandSeeIfIdle(self):
-       #print('waiting for idle')
         QTimer.singleShot(6000, self.checkStillIdle)
     def checkStillIdle(self):
         if time.time()-self.lastAction >= 5.8:
@@ -341,6 +357,8 @@ class SetterWindow(QDialog):
         trackentry = TrackEntry(spell, 30)
         mqttclient.send('a_' + str(id) + '_' + str(trackentry.endTrack))
         logging.debug('st3 send -30 sec mqtt')
+        print('just pressed', index)
+        self.getButton(index).justPressed = True
 
     def StartSpellTrack(self,index,modifier):
         logging.debug('st0 starting spell track (0/10)')
@@ -357,20 +375,23 @@ class SetterWindow(QDialog):
                 mqttclient.send('r_'+str(id))
                 return
         trackentry = TrackEntry(spell, modifier)
+        print('just pressed', index)
+        self.getButton(index).justPressed = True
         mqttclient.send('a_'+str(id)+'_'+str(trackentry.endTrack))
         logging.debug('st3 send mqtt')
 
 class SpellButton(QPushButton):
     def __init__(self,text):
         super().__init__(text)
-        self.spellName = 'spell'
+        self.spellName = text
         self.set = False
+        self.justPressed = False
 
-def BlockButton(id):
+def blockButton(id):
     #just added the track. block removing it for a second
     index = dataholder.getButton(id)
     c.block.emit(index)
-def SaveTrack(id, endTrack):
+def saveTrack(id, endTrack):
     logging.debug('st5 attempting to save track (mqtt)')
     buttonIndex = dataholder.getButton(id)
     trackentry = TrackEntry(dataholder.getSpell(id),0)
@@ -388,7 +409,7 @@ def RemoveTrack(id):
         dataholder.removeTrack(track)
         showTrackEntrys()
     logging.debug('st8 remove track success')
-def ModifyTrack(id, endTrack):
+def modifyTrack(id, endTrack):
     track = dataholder.getTrack(id)
     if track is not None:
         track.updateEndTrack(float(endTrack))
@@ -789,15 +810,15 @@ def on_message(client, userdata, message):
     #print('message', msg)
     msg = msg.split('_')
     if msg[0] == 'a':
-        BlockButton(msg[1])
-        SaveTrack(msg[1], msg[2])
+        saveTrack(msg[1], msg[2])
+        blockButton(msg[1])
         return
     if msg[0] == 'r':
         RemoveTrack(msg[1])
         return
     if msg[0] == 'm':
-        BlockButton(msg[1])
-        ModifyTrack(msg[1],msg[2])
+        modifyTrack(msg[1], msg[2])
+        blockButton(msg[1])
         return
     return
 class Mqttclient():
@@ -931,7 +952,7 @@ def gameTimeThread():
     while activeGameFound:
         time.sleep(1)
         timeAndShow()
-    logging.error('Error: gameTime Thread active game lost ')
+    logging.error('s2 gameTime Thread active game lost. no longer running timeAndShow')
 import keyboard
 hotkeyFilePath = ''
 def loadHotkey():
