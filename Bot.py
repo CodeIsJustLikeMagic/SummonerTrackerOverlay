@@ -30,6 +30,7 @@ class Communicate(QObject):
     unsetAll = pyqtSignal()
     showmqtt = pyqtSignal()
     updateColors = pyqtSignal()
+    block = pyqtSignal(int)
 
 
 c = Communicate()
@@ -160,6 +161,7 @@ class SetterWindow(QDialog):
         c.hotkeyklicked.connect(self.showOnKeyboardPress)
         c.unsetAll.connect(self.clear)
         c.updateColors.connect(self.updateColors)
+        c.block.connect(lambda index: self.blockButton(index))
         self.lastAction = time.time()
         self.show()
         try:
@@ -176,16 +178,29 @@ class SetterWindow(QDialog):
         logging.debug('m1 setter window created')
         self.setdict={}
 
-    def eventFilter(self, object, event):
-        if object.set:
+    def blockButton(self,index):
+        btn = self.spellButtons[index]
+        btn.setEnabled(False)
+        print('disabled', index)
+        QTimer.singleShot(600, lambda: self.unblock(index))
+    def unblock(self, index):
+        spellbutton = self.spellButtons[index]
+        spellbutton.setEnabled(True)
+        if spellbutton.underMouse():
+            spellbutton.setStyleSheet("color: rgb(230,230,230); background-color: rgb(200,50,50)")
+            spellbutton.setText('X')
+        print('enabled', index)
+    def eventFilter(self, spellbutton, event):
+        if spellbutton.set:
             if event.type() == QtCore.QEvent.HoverEnter:
-                object.setStyleSheet("color: rgb(230,230,230); background-color: rgb(200,50,50)")
-                object.setText('X')
-                return True
+                if spellbutton.isEnabled():
+                    spellbutton.setStyleSheet("color: rgb(230,230,230); background-color: rgb(200,50,50)")
+                    spellbutton.setText('X')
+                    return True
             if event.type() == QtCore.QEvent.HoverLeave:
-                if object.set:
-                    object.setStyleSheet(self.setStyle)
-                object.setText(object.spellName)
+                if spellbutton.set:
+                    spellbutton.setStyleSheet(self.setStyle)
+                spellbutton.setText(spellbutton.spellName)
                 return True
         return False
 
@@ -351,7 +366,10 @@ class SpellButton(QPushButton):
         self.spellName = 'spell'
         self.set = False
 
-
+def BlockButton(id):
+    #just added the track. block removing it for a second
+    index = dataholder.getButton(id)
+    c.block.emit(index)
 def SaveTrack(id, endTrack):
     logging.debug('st5 attempting to save track (mqtt)')
     buttonIndex = dataholder.getButton(id)
@@ -448,7 +466,7 @@ class OverlayWindow(QDialog):
         trayIcon.setContextMenu(menu)
         trayIcon.show()
         self.timer=QTimer()
-        self.timer.timeout.connect(self.hoi)
+        self.timer.timeout.connect(self.clearStatus)
         self.timer.setSingleShot(True)
         self.show()
         try:
@@ -467,7 +485,7 @@ class OverlayWindow(QDialog):
 
         self.timer.start(10000)
 
-    def hoi(self):
+    def clearStatus(self):
         c.status.emit('')
     def showStatus(self,m):
         if len(m)==0:
@@ -771,12 +789,14 @@ def on_message(client, userdata, message):
     #print('message', msg)
     msg = msg.split('_')
     if msg[0] == 'a':
+        BlockButton(msg[1])
         SaveTrack(msg[1], msg[2])
         return
     if msg[0] == 'r':
         RemoveTrack(msg[1])
         return
     if msg[0] == 'm':
+        BlockButton(msg[1])
         ModifyTrack(msg[1],msg[2])
         return
     return
