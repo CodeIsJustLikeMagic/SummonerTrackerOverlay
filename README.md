@@ -29,3 +29,6 @@ Information is shared via mqtt. Your team information (summoner names and teamid
 
 The positions of the windows and the hotkey are saved in `%Appdata%\SummonerTrackerOverlay` after you have started the overlay once.
 This is also where you can find a log file. The log gets cleared every 7 days.
+
+--------
+This project isn't endorsed by Riot Games and doesn't reflect the views or opinions of Riot Games or anyone officially involved in producing or managing League of Legends.
