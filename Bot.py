@@ -203,12 +203,13 @@ class SetterWindow(QDialog):
         print('enabled', index)
     def eventFilter(self, spellbutton, event):
         if event.type() == QtCore.QEvent.HoverEnter:
-            here
+            self.waitandSeeIfIdle()
             if spellbutton.isEnabled() and spellbutton.set:
                 spellbutton.setStyleSheet(self.redStyle)
                 spellbutton.setText('X')
                 return True
         if event.type() == QtCore.QEvent.HoverLeave:
+            self.waitandSeeIfIdle()
             if spellbutton.set:
                 spellbutton.setStyleSheet(self.setStyle)
                 spellbutton.setText(spellbutton.spellName)
@@ -218,7 +219,6 @@ class SetterWindow(QDialog):
 
     def showOnKeyboardPress(self):
         if self.isHidden():
-            self.lastAction = time.time()
             self.waitandSeeIfIdle()
             self.setHidden(False)
         else:
@@ -330,8 +330,8 @@ class SetterWindow(QDialog):
             if moved.manhattanLength() > 3:
                 event.ignore()
                 return
-
     def waitandSeeIfIdle(self):
+        self.lastAction = time.time()
         QTimer.singleShot(6000, self.checkStillIdle)
     def checkStillIdle(self):
         if time.time()-self.lastAction >= 5.8:
@@ -339,7 +339,6 @@ class SetterWindow(QDialog):
             self.hide()
     def ModifySpellTrack(self,index):
         logging.debug('st0 modify spell -30 sec')
-        self.lastAction = time.time()
         self.waitandSeeIfIdle()
         id = dataholder.getIdByBtnIndex(index)
         spell = dataholder.getSpell(id)
@@ -362,7 +361,6 @@ class SetterWindow(QDialog):
 
     def StartSpellTrack(self,index,modifier):
         logging.debug('st0 starting spell track (0/10)')
-        self.lastAction = time.time()
         self.waitandSeeIfIdle()
         id = dataholder.getIdByBtnIndex(index)
         spell = dataholder.getSpell(id)
