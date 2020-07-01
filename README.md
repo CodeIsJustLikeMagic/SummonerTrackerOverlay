@@ -1,18 +1,22 @@
 SummonerTracker Overlay
 ======================
+
+An Overlay intended for Tracking Summoner Spells and sharing them with teammates.
+
+[Screenshots](https://imgur.com/a/Dxjq56W)
+
 How to use it
 ------------
-Press the hotkey (default: ^) to open the Setter Window in game and start timing summoner spells.
-The summoner spell buttons will assume that the spell has been used 7 seconds ago. 
-The "-1min" Buttons will assume the spell has been used 1 minute ago.
-To remove a spell timer press the button again.
-
-"reload" will update the positions of the Champions in the Setter Window according to the in game scoreboard.
+* Press the hotkey (default: ^) to open the Setter Window in game and start timing summoner spells.
+* The summoner spell buttons will assume that the spell has been used 7 seconds ago. 
+* The "-30 sec" Buttons will Modify existing Timers by subtracting 30 seconds.
+* To remove a spell timer press the button again.
+* "reload" will update the positions of the Champions in the Setter Window according to the in game scoreboard.
 
 If another summoner on your team uses the overlay as well you will share information with each other.
 
 When you start the overlay it will create a tray icon (next to the time and date in the windows tool bar).
-From there you can set your prefered hotkey (examples include: ^; space; shift+s) and move the Information Display Window and the Setter Window.
+From there you can move the Information Display Window and the Setter Window and set your prefered hotkey (examples include: ^; space; shift+s). 
 
 The overlay is not visible if you play in fullscreen mode.
 
@@ -23,7 +27,7 @@ This Tracker DOES NOT track spells automatically. You have to start the timers y
 How it works
 ------------
 The riot live game api is used to find current game information to set the champions and spells in the Setter Overlay.
-(Please be aware that the ulimate cooldows are currently not loaded via api. They are allways tracked with 110 seconds cooldown regardless of champion)
+(Please be aware that the ulimate cooldows are currently not loaded via api. They are allways tracked with 110 seconds cooldown regardless of champion. Also I'm completely ignoring cdr runes and items. Teleport gets calculated with the champion level though.)
 
 Information is shared via mqtt. Your team information (summoner names and teamid) is used to create the topic. All your team members listen and publish to the same topic.
 
