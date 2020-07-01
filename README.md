@@ -34,5 +34,14 @@ Information is shared via mqtt. Your team information (summoner names and teamid
 The positions of the windows and the hotkey are saved in `%Appdata%\SummonerTrackerOverlay` after you have started the overlay once.
 This is also where you can find a log file. The log gets cleared every 7 days.
 
+Legal Stuff
 --------
 This project isn't endorsed by Riot Games and doesn't reflect the views or opinions of Riot Games or anyone officially involved in producing or managing League of Legends.
+
+Similar Applications intended for Tracking Summoners were reviewed and verfied by Riot.
+E.g.: 
+* [LOL Tracker](https://www.loltracker.gg/)
+* [Summoner](/github.com/4dams/Summoner)
+* every Summoner Tracker in the Apple Store and the Google Play Store ([Flash Track](http://flashtrack.webflow.io/), [Summoner Tracker for LoL](https://play.google.com/store/apps/details?id=com.at.factory.summonertrackerapp&hl=de)) according to Riots [Legal Jibber Jabber](https://www.riotgames.com/en/legal) Paragraph 3.
+
+Please note that all of these trackers are inferior to mine because they don't share information with teammates ;)
