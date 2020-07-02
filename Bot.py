@@ -461,7 +461,7 @@ class OverlayWindow(QDialog):
 
     def __init__(self):
         super().__init__()
-        layout = QVBoxLayout()
+        layout = QGridLayout()
         self.setLayout(layout)
 
         self.setWindowFlags(Qt.WindowStaysOnTopHint | Qt.FramelessWindowHint)
@@ -478,6 +478,13 @@ class OverlayWindow(QDialog):
         self.l.setGraphicsEffect(effect)
         self.l.setStyleSheet("color: rgb(230,230,230)")
 
+        self.moveLabel = QLabel('grab me!')
+        self.moveLabel.setFont(font)
+        self.moveLabel.setStyleSheet("border: 5px solid white; color: rgb(230,230,230); background-color: rgb(150,150,150)")
+        layout.addWidget(self.moveLabel, 1, 0)
+        self.moveLabel.hide()
+
+
         self.statuslbl = QLabel('Overlay Started')
         self.statuslbl.setFont(font)
         effect = QGraphicsDropShadowEffect()
@@ -490,8 +497,8 @@ class OverlayWindow(QDialog):
         c.status.connect(lambda m: self.showStatus(m))
         c.text.connect(lambda m: self.l.setText(m))
         c.showmqtt.connect(self.showMQTTInfo)
-        layout.addWidget(self.l)
-        layout.addWidget(self.statuslbl)
+        layout.addWidget(self.l,0,0)
+        layout.addWidget(self.statuslbl,2,0)
         self.setFocusPolicy(Qt.NoFocus)
         self.ismovable = False
 
@@ -503,11 +510,11 @@ class OverlayWindow(QDialog):
         openHotKeyFileAction = menu.addAction("Set Hotkey")
         global hotkeyFilePath
         openHotKeyFileAction.triggered.connect(lambda: os.startfile(hotkeyFilePath))
-        moveAction = menu.addAction("Move")
+        moveAction = menu.addAction("Toggle moveable")
         moveAction.triggered.connect(self.toggleMovable)
         resetPosAction = menu.addAction("Reset Position")
         resetPosAction.triggered.connect(self.resetPos)
-        toggleSetterAction = menu.addAction("Toggle allays show Setter Window")
+        toggleSetterAction = menu.addAction("Toggle hide Setter when idle")
         toggleSetterAction.triggered.connect(lambda: c.toogleShow.emit())
         showmqttInfoAction = menu.addAction("Show mqtt info")
         showmqttInfoAction.triggered.connect(self.showMQTTInfo)
@@ -587,16 +594,15 @@ class OverlayWindow(QDialog):
             c.unmovable.emit()
         else:
             self.movable()
+
     def movable(self):
         c.move.emit()
         self.ismovable = True
-        self.setAttribute(Qt.WA_TranslucentBackground, on=False)
-        self.setAutoFillBackground(False)
-        self.l.setStyleSheet("border: 3px solid white; color: rgb(230,230,230)")
+        self.moveLabel.setHidden(False)
 
     def unmovable(self):
         self.ismovable = False
-        self.l.setStyleSheet("border: none; color: rgb(230,230,230)")
+        self.moveLabel.setHidden(True)
 
     def visibleIfNoMouse(self):
         if self.l.underMouse() is False:
