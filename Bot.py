@@ -14,18 +14,19 @@ import requests
 import json
 import time
 
+
 class Communicate(QObject):
     text = pyqtSignal(str)
     initMove = pyqtSignal(int, int)
-    setterChampion = pyqtSignal(int,str)
-    settSpell = pyqtSignal(int,str)
+    setterChampion = pyqtSignal(int, str)
+    settSpell = pyqtSignal(int, str)
     resetPos = pyqtSignal()
     move = pyqtSignal()
     unmovable = pyqtSignal()
     colorSet = pyqtSignal(int)
     colorUnset = pyqtSignal(int)
     exitC = pyqtSignal()
-    hotkeyklicked = pyqtSignal()
+    hotkeyClicked = pyqtSignal()
     status = pyqtSignal(str)
     unsetAll = pyqtSignal()
     showmqtt = pyqtSignal()
@@ -35,10 +36,13 @@ class Communicate(QObject):
 
 c = Communicate()
 
+
 def resource_path(relative_path):
     if hasattr(sys, '_MEIPASS'):
         return os.path.join(sys._MEIPASS, relative_path)
     return os.path.join(os.path.abspath('.'), relative_path)
+
+
 class SetterWindow(QDialog):
     def __init__(self):
         super().__init__()
@@ -54,11 +58,10 @@ class SetterWindow(QDialog):
         font = QFont('Serif', 11)
         font.setWeight(62)
 
-
         self.championLabels = []
         self.ult = []
         for x in range(5):
-            champlbl = QLabel("player"+str(x+1))
+            champlbl = QLabel("player" + str(x + 1))
             champlbl.setFont(font)
             champlbl.setStyleSheet("color: rgb(230,230,230)")
             effect = QGraphicsDropShadowEffect()
@@ -66,7 +69,7 @@ class SetterWindow(QDialog):
             effect.setColor(QColor(0, 0, 0, 255))
             effect.setOffset(1)
             champlbl.setGraphicsEffect(effect)
-            grid_layout.addWidget(champlbl, x*2, 0)
+            grid_layout.addWidget(champlbl, x * 2, 0)
             self.championLabels.append(champlbl)
             champsult = SpellButton("ult")
             champsult.setFont(font)
@@ -76,7 +79,7 @@ class SetterWindow(QDialog):
             effect.setOffset(1)
             champsult.setGraphicsEffect(effect)
             champsult.setStyleSheet(self.unSetStyle)
-            grid_layout.addWidget(champsult, 1+(x*2), 0)
+            grid_layout.addWidget(champsult, 1 + (x * 2), 0)
             self.ult.append(champsult)
 
         self.spellButtons = []
@@ -100,18 +103,19 @@ class SetterWindow(QDialog):
             effect.setOffset(1)
             minButton.setGraphicsEffect(effect)
             minButton.setStyleSheet(self.unSetStyle)
-            grid_layout.addWidget(minButton,x,2)
+            grid_layout.addWidget(minButton, x, 2)
             self.minButtons.append(minButton)
         self.moveLabel = QLabel('grab me!')
         self.moveLabel.setFont(font)
-        self.moveLabel.setStyleSheet("border: 5px solid white; color: rgb(230,230,230); background-color: rgb(150,150,150)")
-        grid_layout.addWidget(self.moveLabel,12,1)
+        self.moveLabel.setStyleSheet(
+            "border: 5px solid white; color: rgb(230,230,230); background-color: rgb(150,150,150)")
+        grid_layout.addWidget(self.moveLabel, 12, 1)
         self.moveLabel.hide()
 
         self.reloadButton = QPushButton('reload')
         self.reloadButton.setFont(font)
         self.reloadButton.setStyleSheet("color: rgb(230,230,230); background-color: rgb(150,150,150)")
-        grid_layout.addWidget(self.reloadButton,12,2)
+        grid_layout.addWidget(self.reloadButton, 12, 2)
         effect = QGraphicsDropShadowEffect()
         effect.setBlurRadius(0)
         effect.setColor(QColor(0, 0, 0, 255))
@@ -119,16 +123,16 @@ class SetterWindow(QDialog):
         self.reloadButton.setGraphicsEffect(effect)
         self.reloadButton.clicked.connect(lambda: mqttclient.renonnectmqtt())
 
-        self.spellButtons[0].clicked.connect(lambda: self.StartSpellTrack(0,7))
-        self.spellButtons[1].clicked.connect(lambda: self.StartSpellTrack(1,7))
-        self.spellButtons[2].clicked.connect(lambda: self.StartSpellTrack(2,7))
-        self.spellButtons[3].clicked.connect(lambda: self.StartSpellTrack(3,7))
-        self.spellButtons[4].clicked.connect(lambda: self.StartSpellTrack(4,7))
-        self.spellButtons[5].clicked.connect(lambda: self.StartSpellTrack(5,7))
-        self.spellButtons[6].clicked.connect(lambda: self.StartSpellTrack(6,7))
-        self.spellButtons[7].clicked.connect(lambda: self.StartSpellTrack(7,7))
-        self.spellButtons[8].clicked.connect(lambda: self.StartSpellTrack(8,7))
-        self.spellButtons[9].clicked.connect(lambda: self.StartSpellTrack(9,7))
+        self.spellButtons[0].clicked.connect(lambda: self.StartSpellTrack(0, 7))
+        self.spellButtons[1].clicked.connect(lambda: self.StartSpellTrack(1, 7))
+        self.spellButtons[2].clicked.connect(lambda: self.StartSpellTrack(2, 7))
+        self.spellButtons[3].clicked.connect(lambda: self.StartSpellTrack(3, 7))
+        self.spellButtons[4].clicked.connect(lambda: self.StartSpellTrack(4, 7))
+        self.spellButtons[5].clicked.connect(lambda: self.StartSpellTrack(5, 7))
+        self.spellButtons[6].clicked.connect(lambda: self.StartSpellTrack(6, 7))
+        self.spellButtons[7].clicked.connect(lambda: self.StartSpellTrack(7, 7))
+        self.spellButtons[8].clicked.connect(lambda: self.StartSpellTrack(8, 7))
+        self.spellButtons[9].clicked.connect(lambda: self.StartSpellTrack(9, 7))
 
         self.minButtons[0].clicked.connect(lambda: self.ModifySpellTrack(0))
         self.minButtons[1].clicked.connect(lambda: self.ModifySpellTrack(1))
@@ -141,27 +145,27 @@ class SetterWindow(QDialog):
         self.minButtons[8].clicked.connect(lambda: self.ModifySpellTrack(8))
         self.minButtons[9].clicked.connect(lambda: self.ModifySpellTrack(9))
 
-        self.ult[0].clicked.connect(lambda: self.StartSpellTrack(10,7))
-        self.ult[1].clicked.connect(lambda: self.StartSpellTrack(11,7))
-        self.ult[2].clicked.connect(lambda: self.StartSpellTrack(12,7))
-        self.ult[3].clicked.connect(lambda: self.StartSpellTrack(13,7))
-        self.ult[4].clicked.connect(lambda: self.StartSpellTrack(14,7))
+        self.ult[0].clicked.connect(lambda: self.StartSpellTrack(10, 7))
+        self.ult[1].clicked.connect(lambda: self.StartSpellTrack(11, 7))
+        self.ult[2].clicked.connect(lambda: self.StartSpellTrack(12, 7))
+        self.ult[3].clicked.connect(lambda: self.StartSpellTrack(13, 7))
+        self.ult[4].clicked.connect(lambda: self.StartSpellTrack(14, 7))
 
         for btn in self.spellButtons:
             btn.installEventFilter(self)
         for btn in self.ult:
             btn.installEventFilter(self)
 
-        self.postxtfilepath = os.path.join(appdatadir.overlaydir,"pos2.txt")
-        c.setterChampion.connect(lambda index, val: self.setchampionlabel(index,val))
-        c.settSpell.connect(lambda index,val: self.setspelllabel(index,val))
+        self.postxtfilepath = os.path.join(appdatadir.overlaydir, "pos2.txt")
+        c.setterChampion.connect(lambda index, val: self.setchampionlabel(index, val))
+        c.settSpell.connect(lambda index, val: self.setspelllabel(index, val))
         c.resetPos.connect(self.resetPos)
         c.move.connect(self.movable)
         c.colorSet.connect(lambda index: self.setColorButton(index))
         c.colorUnset.connect(lambda index: self.unsetColorButton(index))
         c.exitC.connect(self.close)
         c.unmovable.connect(self.unmovable)
-        c.hotkeyklicked.connect(self.showOnKeyboardPress)
+        c.hotkeyClicked.connect(self.showOnKeyboardPress)
         c.unsetAll.connect(self.clearAllButtons)
         c.updateColors.connect(self.updateColors)
         c.block.connect(lambda index: self.blockButton(index))
@@ -173,27 +177,29 @@ class SetterWindow(QDialog):
                 pos = f.read()
                 pos = pos.split(' ')
                 if len(pos) == 2:
-                    #print('moving overlay to position from appdata file')
+                    # print('moving overlay to position from appdata file')
                     self.move(int(int(pos[0]) / 2), int(int(pos[1]) / 2))
         except FileNotFoundError:
             pass
         self.hide()
         logging.debug('m1 setter window created')
+
     def getButton(self, index):
         if index >= 10:
             return self.ult[index - 10]
         else:
             return self.spellButtons[index]
-    def blockButton(self,index):
+
+    def blockButton(self, index):
         btn = self.getButton(index)
         if btn.justPressed:
-            print('dont disable button', index)
             btn.justPressed = False
-            print('just pressed false')
+            print('ignore disable', index)
             return
         btn.setEnabled(False)
         print('disabled', index)
         QTimer.singleShot(1300, lambda: self.unblock(index))
+
     def unblock(self, index):
         spellbutton = self.getButton(index)
         spellbutton.setEnabled(True)
@@ -201,6 +207,7 @@ class SetterWindow(QDialog):
             spellbutton.setText('X')
             spellbutton.setStyleSheet(self.redStyle)
         print('enabled', index)
+
     def eventFilter(self, spellbutton, event):
         if event.type() == QtCore.QEvent.HoverEnter:
             self.waitandSeeIfIdle()
@@ -222,23 +229,25 @@ class SetterWindow(QDialog):
             self.setHidden(False)
         else:
             self.hide()
-        #show but dont steal focus on hotkeypressnnn
-        #hide again if hotkey is pressed again
+        # show but dont steal focus on hotkeypressnnn
+        # hide again if hotkey is pressed again
+
     def clearAllButtons(self):
-        for num, lbl in enumerate(self.championLabels,start = 1):
-            lbl.setText('player'+str(num))
+        for num, lbl in enumerate(self.championLabels, start=1):
+            lbl.setText('player' + str(num))
         for btn in self.spellButtons:
             btn.setText('spell')
-            btn.spellName= 'spell'
+            btn.spellName = 'spell'
             btn.set = False
             btn.justPressed = False
             btn.setStyleSheet(self.unSetStyle)
         for btn in self.minButtons:
             btn.setStyleSheet(self.unSetStyle)
-        for num,btn in enumerate(self.ult,start=0):
+        for num, btn in enumerate(self.ult, start=0):
             btn.setStyleSheet(self.unSetStyle)
             btn.set = False
             btn.justPressed = False
+
     def updateColors(self):
         for btn in self.spellButtons:
             btn.setStyleSheet(self.unSetStyle)
@@ -258,9 +267,9 @@ class SetterWindow(QDialog):
         btn.setStyleSheet(self.unSetStyle)
         btn.set = False
         btn.setText(btn.spellName)
+
     def setColorButton(self, index):
         btn = self.getButton(index)
-        print('set Color')
         btn.set = True
         if btn.justPressed:
             if btn.underMouse():
@@ -271,11 +280,11 @@ class SetterWindow(QDialog):
 
         return
 
-
-    def setchampionlabel(self,index,val):
+    def setchampionlabel(self, index, val):
         self.championLabels[index].setText(val)
-    def setspelllabel(self,index,val):
-        logging.debug('     gc* setting spell label '+str(index)+ ' '+ str(val))
+
+    def setspelllabel(self, index, val):
+        logging.debug('     gc* setting spell label ' + str(index) + ' ' + str(val))
         self.spellButtons[index].setText(val)
         if index < 10:
             self.spellButtons[index].spellName = val
@@ -302,7 +311,7 @@ class SetterWindow(QDialog):
         self.hide()
 
     def mousePressEvent(self, event):
-        #print('mouse Press Event')
+        # print('mouse Press Event')
         self.__mousePressPos = None
         self.__mouseMovePos = None
         if event.button() == Qt.LeftButton:
@@ -311,7 +320,7 @@ class SetterWindow(QDialog):
 
     def mouseMoveEvent(self, event):
         if event.buttons() == Qt.LeftButton:
-            if(self.ismovable):
+            if (self.ismovable):
                 # adjust offset from clicked point to origin of widget
                 currPos = self.mapToGlobal(self.pos())
                 globalPos = event.globalPos()
@@ -329,14 +338,18 @@ class SetterWindow(QDialog):
             if moved.manhattanLength() > 3:
                 event.ignore()
                 return
+
     def waitandSeeIfIdle(self):
         self.lastAction = time.time()
         QTimer.singleShot(6000, self.checkStillIdle)
+
     def checkStillIdle(self):
-        if time.time()-self.lastAction >= 5.8:
-            #print('idle detected')
+        if time.time() - self.lastAction >= 5.8:
+            # print('idle detected')
             self.hide()
-    def ModifySpellTrack(self,index):
+
+    def ModifySpellTrack(self, index):
+        print('modify spell track')
         logging.debug('st0 modify spell -30 sec')
         self.waitandSeeIfIdle()
         id = dataholder.getIdByBtnIndex(index)
@@ -345,12 +358,14 @@ class SetterWindow(QDialog):
             logging.debug('stError spell not found')
             return
         old = dataholder.getTrack(id)
-        if old is not None:
-            if old.endTrack > gameTime.elapsed:
-                #modify spell
-                modendtrack = old.endTrack -30
-                mqttclient.send('m_'+str(id)+'_'+str(modendtrack))
+        if old is not None: # old exists
+            if old.endTrack > gameTime.elapsed: # and is not elapsed
+                # modify spell
+                modendtrack = old.endTrack - 30
+                mqttclient.send('m_' + str(id) + '_' + str(modendtrack))
                 logging.debug('st3 send mqtt modified old')
+                print('just pressed', index)
+                self.getButton(index).justPressed = True
                 return
         trackentry = TrackEntry(spell, 30)
         mqttclient.send('a_' + str(id) + '_' + str(trackentry.endTrack))
@@ -358,7 +373,7 @@ class SetterWindow(QDialog):
         print('just pressed', index)
         self.getButton(index).justPressed = True
 
-    def StartSpellTrack(self,index,modifier):
+    def StartSpellTrack(self, index, modifier):
         logging.debug('st0 starting spell track (0/10)')
         self.waitandSeeIfIdle()
         id = dataholder.getIdByBtnIndex(index)
@@ -369,35 +384,40 @@ class SetterWindow(QDialog):
         old = dataholder.getTrack(id)
         if old is not None:
             if old.endTrack > gameTime.elapsed:
-                mqttclient.send('r_'+str(id))
+                mqttclient.send('r_' + str(id))
                 return
         trackentry = TrackEntry(spell, modifier)
         print('just pressed', index)
         self.getButton(index).justPressed = True
-        mqttclient.send('a_'+str(id)+'_'+str(trackentry.endTrack))
+        mqttclient.send('a_' + str(id) + '_' + str(trackentry.endTrack))
         logging.debug('st3 send mqtt')
 
+
 class SpellButton(QPushButton):
-    def __init__(self,text):
+    def __init__(self, text):
         super().__init__(text)
         self.spellName = text
         self.set = False
         self.justPressed = False
 
+
 def blockButton(id):
-    #just added the track. block removing it for a second
+    # just added the track. block removing it for a second
     index = dataholder.getButton(id)
     c.block.emit(index)
+
+
 def saveTrack(id, endTrack):
     logging.debug('st5 attempting to save track (mqtt)')
     buttonIndex = dataholder.getButton(id)
-    trackentry = TrackEntry(dataholder.getSpell(id),0)
+    trackentry = TrackEntry(dataholder.getSpell(id), 0)
     trackentry.updateEndTrack(float(endTrack))
     t = trackentry
-    dataholder.addTrack(id,trackentry)
+    dataholder.addTrack(id, trackentry)
     showTrackEntrys()
     c.colorSet.emit(int(buttonIndex))
     logging.debug('st10 save track success')
+
 
 def RemoveTrack(id):
     logging.debug('st3 attempting to remove track (mqtt)')
@@ -406,12 +426,16 @@ def RemoveTrack(id):
         dataholder.removeTrack(track)
         showTrackEntrys()
     logging.debug('st8 remove track success')
+
+
 def modifyTrack(id, endTrack):
     track = dataholder.getTrack(id)
     if track is not None:
         track.updateEndTrack(float(endTrack))
-        dataholder.addTrack(id,track)
+        dataholder.addTrack(id, track)
         showTrackEntrys()
+
+
 class OverlayWindow(QDialog):
 
     def __init__(self):
@@ -428,7 +452,7 @@ class OverlayWindow(QDialog):
         self.l.setFont(font)
         effect = QGraphicsDropShadowEffect()
         effect.setBlurRadius(0)
-        effect.setColor(QColor(0,0,0,255))
+        effect.setColor(QColor(0, 0, 0, 255))
         effect.setOffset(1)
         self.l.setGraphicsEffect(effect)
         self.l.setStyleSheet("color: rgb(230,230,230)")
@@ -442,7 +466,6 @@ class OverlayWindow(QDialog):
         self.statuslbl.setGraphicsEffect(effect)
         self.statuslbl.setStyleSheet("color: rgb(230,230,230);background-color: rgb(90,90,90)")
 
-
         c.status.connect(lambda m: self.showStatus(m))
         c.text.connect(lambda m: self.l.setText(m))
         c.showmqtt.connect(self.showMQTTInfo)
@@ -452,7 +475,6 @@ class OverlayWindow(QDialog):
         self.ismovable = False
 
         # Translate asset paths to useable format for PyInstaller
-        #print(resource_path('./assets/trackerIcon.xpm'))
         icon = QIcon(resource_path('./assets/trackerIcon.xpm'))
         trayIcon = QSystemTrayIcon(icon, self)
         self.setWindowIcon(icon)
@@ -465,17 +487,17 @@ class OverlayWindow(QDialog):
         resetPosAction = menu.addAction("Reset Position")
         resetPosAction.triggered.connect(self.resetPos)
         toggleSetterAction = menu.addAction("Toggle Setter Window")
-        toggleSetterAction.triggered.connect(lambda: c.hotkeyklicked.emit())
-        showmqttInfoAction= menu.addAction("show mqtt info")
+        toggleSetterAction.triggered.connect(lambda: c.hotkeyClicked.emit())
+        showmqttInfoAction = menu.addAction("show mqtt info")
         showmqttInfoAction.triggered.connect(self.showMQTTInfo)
         newConnection = menu.addAction('new Connection')
         newConnection.triggered.connect(mqttclient.renonnectmqtt)
         exitAction = menu.addAction("Exit")
         exitAction.triggered.connect(self.close)
-        #self.aboutToQuit(disconnectmqtt())
+        # self.aboutToQuit(disconnectmqtt())
         c.unmovable.connect(self.unmovable)
 
-        self.postxtfilepath = os.path.join(appdatadir.overlaydir,"pos.txt")
+        self.postxtfilepath = os.path.join(appdatadir.overlaydir, "pos.txt")
 
         import ctypes
         myappid = 'summonerTrackerOverlay'  # arbitrary string
@@ -483,7 +505,7 @@ class OverlayWindow(QDialog):
 
         trayIcon.setContextMenu(menu)
         trayIcon.show()
-        self.timer=QTimer()
+        self.timer = QTimer()
         self.timer.timeout.connect(self.clearStatus)
         self.timer.setSingleShot(True)
         self.show()
@@ -498,6 +520,7 @@ class OverlayWindow(QDialog):
             logging.debug('m* no position file')
 
         logging.debug('m2 overlay window created')
+
     def showMQTTInfo(self):
         c.status.emit(mqttclient.connectionInfo)
 
@@ -505,12 +528,14 @@ class OverlayWindow(QDialog):
 
     def clearStatus(self):
         c.status.emit('')
-    def showStatus(self,m):
-        if len(m)==0:
+
+    def showStatus(self, m):
+        if len(m) == 0:
             self.statuslbl.hide()
         else:
             self.statuslbl.setHidden(False)
             self.statuslbl.setText(m)
+
     def closeEvent(self, event) -> None:
         logging.debug('m5 closeing Overlay!')
         mqttclient.disconnectmqtt()
@@ -579,76 +604,78 @@ class OverlayWindow(QDialog):
                 event.ignore()
                 return
 
+
 class Spell():
-    def __init__(self,shortName, cd):
+    def __init__(self, shortName, cd):
         self.shortName = shortName
         self.cd = cd
-spellDatabase = {
-    'Heal':Spell('h',240),
-    'Ghost':Spell('ghost', 210),
-    'Barrier': Spell('barr', 180),
-    'Exhaust': Spell('exh', 210),
-    'Clarity': Spell('clarity',240),
-    'Flash':Spell('f',300),
-    'HexFlash': Spell('f',300),
-    'Teleport': Spell('tp',240),
-    'Smite':Spell('smite',15),
-    'Cleanse': Spell('cleanse', 210),
-    'Ignite':Spell('ign', 180),
-    'Mark':Spell('mark', 48),
-    'Dash': Spell('mark',48),
-    'Challenging Smite': Spell('smite',15),
-    'Chilling Smite': Spell('smite',15),
-    'Poro Toss': Spell('p-mark',80),
-    'Poro Dash':Spell('p-dash',80),
-    'To the King!': Spell('king', 10),
-    'Resuscitate': Spell('rev', 100),
-    'Warp':Spell('warp',15)
-}
+
+def calculateCD(spell):
+    gtcdr = dataholder.getgameTypeCdr()
+    if gtcdr == spellDatabase.get("ARAM"):
+        cd = spell.cd * (1.0 - (spell.runecdr / 100.0))
+        cdr = gtcdr + getItemCDR(spell)
+        return cd * (1.0 - ((gtcdr + getItemCDR(spell)) / 100.0))
+    else:
+        return spell.cd * (1.0 - ((getItemCDR(spell) + spell.basecdr) / 100.0))
 
 class TrackEntry():
-    def __init__(self,spell,modifier):
+    def __init__(self, spell, modifier):
+        cd = calculateCD(spell)
         now = gameTime.elapsed
-        self.endTrack = now + spell.cd
+        self.endTrack = now + cd
         self.endTrack = self.endTrack - modifier
         self.spell = spell
         self.endTrack = float("{:.2f}".format(self.endTrack))
+        print('created Track', cd, spell.spellname)
         self.updateEndTrack(self.endTrack)
+
     def updateEndTrack(self, endTrack):
         self.endTrack = endTrack
         self.endTrackMins = time.strftime("%M:%S", time.gmtime(self.endTrack))
         self.desc = self.spell.champion + ' ' + self.spell.spellname + ' ' + self.endTrackMins
+
 class SummonerSpell():
-    def __init__(self, cham, spellname, mqttdesc):
+    def __init__(self, cham, spellname, mqttdesc, runecdr):
         self.champion = cham
+        self.runecdr = runecdr
         if spellDatabase.get(spellname) is None:
-            logging.debug('     gc6 ssError spell '+spellname+' doesnt exist in database')
+            logging.debug('     gc6 ssError spell ' + spellname + ' doesnt exist in database')
         self.spellname = spellDatabase.get(spellname).shortName
         self.cd = spellDatabase.get(spellname).cd
         self.mqttdesc = mqttdesc
-        logging.debug('     gc6 ss0 created summonerspell '+self.spellname+' '+str(self.cd)+' '+str(self.mqttdesc) +'(0/1)')
+        logging.debug('     gc6 ss0 created summonerspell ' + self.spellname + ' ' + str(self.cd) + ' ' + str(
+            self.mqttdesc) + '(0/1)')
+
 class UltSpell():
-    def __init__(self,cham,cd,mqttdesc):
+    def __init__(self, cham, cd, mqttdesc,runecdr):
         self.champion = cham
+        self.runecdr = runecdr
         self.spellname = 'ult'
         self.cd = cd
         self.mqttdesc = mqttdesc
 
+
 class GameTime():
     def __init__(self):
         self.gameStart = time.time()
-        self.elapsed = time.time()-self.gameStart
+        self.elapsed = time.time() - self.gameStart
+
     def setGameTime(self, currentGameTime):
         now = time.time()
         self.gameStart = now - currentGameTime
         now = time.time()
         self.elapsed = now - self.gameStart
+
     def advanceGameTime(self):
         now = time.time()
         self.elapsed = now - self.gameStart
         self.gameTimeMins = time.strftime("%M:%S", time.gmtime(self.elapsed))
 
+
 gameTime = GameTime()
+
+
 def timeAndShow():
     logging.debug('s1 running timeAndShow')
     global activeGameFound
@@ -659,10 +686,12 @@ def timeAndShow():
         dataholder.clear()
         c.text.emit('')
         c.unsetAll.emit()
+
+
 def showTrackEntrys():
     show = ''
     with datalock:
-        for id,track in dataholder.tracks.items():
+        for id, track in dataholder.tracks.items():
             if track.endTrack > gameTime.elapsed:
                 show = show + track.desc + '\n'
             else:
@@ -672,95 +701,152 @@ def showTrackEntrys():
         show = gameTime.gameTimeMins + '\n\n' + show
     c.text.emit(show)
 
+
 datalock = threading.Lock()
+
+
 class Dataholder():
     def __init__(self):
         with datalock:
-            self.spells={}
-            self.lvls={}
-            self.tracks={}
-            self.champions={}
-            self.buttons={}
+            self.spells = {}
+            self.lvls = {}
+            self.tracks = {}
+            self.items = {}
+            self.buttons = {}
+            self.gtcdr = 0.0
+    def setgameTypeCdr(self,cdr):
+        with datalock:
+            self.gtcdr = cdr
+    def getgameTypeCdr(self):
+        with datalock:
+            ret = self.gtcdr
+        return ret
     def clear(self):
         with datalock:
             logging.debug('clearing data')
-            self.spells={}
-            self.lvls={}
-            self.tracks={}
-            self.buttons={}
+            self.spells = {}
+            self.lvls = {}
+            self.tracks = {}
+            self.buttons = {}
+            self.items = {}
+            self.gtcdr = 0.0
+
+    def setItems(self, champion, j):
+        with datalock:
+            self.items[champion] = j
+
     def addButton(self, id, btnindex):
         with datalock:
             self.buttons[id] = btnindex
-    def addSpell(self,id, spell):
+
+    def addSpell(self, id, spell):
         with datalock:
             self.spells[id] = spell
-            logging.debug('     gc6 ss1 spell saved ' +spell.spellname)
+            logging.debug('     gc6 ss1 spell saved ' + spell.spellname)
+
     def setLvl(self, champion, lvl):
         with datalock:
             self.lvls[champion] = lvl
-        logging.debug(' gc* ll* set level for '+ champion + ' '+str(lvl))
+        logging.debug(' gc* ll* set level for ' + champion + ' ' + str(lvl))
+
     def addTrack(self, id, trackentry):
         logging.debug('st7 attempting to add track')
         with datalock:
             logging.debug('st8 add track')
             dataholder.tracks[id] = trackentry
             sortTracks()
+
     def removeTrack(self, track):
         with datalock:
             logging.debug('st? removeTrack')
             track.endTrack = float(0)
             sortTracks()
+
+    def getItem(self, champion):
+        with datalock:
+            ret = self.items.get(champion)
+        return ret
+
     def getSpell(self, id):
         logging.debug('st1+6 attempting to get spell')
         with datalock:
             ret = self.spells.get(id)
         return ret
-    def getTrack(self,id):
+
+    def getTrack(self, id):
         with datalock:
             ret = self.tracks.get(id)
         return ret
 
     def getButton(self, id):
         with datalock:
-            ret= self.buttons.get(id)
+            ret = self.buttons.get(id)
         return ret
+
     def getIdByBtnIndex(self, index):
         with datalock:
-            ret = dict((v,k)for k,v in self.buttons.items()).get(index)
+            ret = dict((v, k) for k, v in self.buttons.items()).get(index)
         return ret
+
     def clearButtons(self):
         with datalock:
-            self.buttons={}
-def sortTracks(): # called while thread is locked
+            self.buttons = {}
+
+
+def sortTracks():  # called while thread is locked
     logging.debug('st?9 sorting tracks')
     dataholder.tracks = dict(sorted(dataholder.tracks.items(), key=lambda x: x[1].endTrack))
 
+
 dataholder = Dataholder()
-def loadLevels():
+
+
+def getItemCDR(spell):
+    items = dataholder.getItem(spell.champion)
+    if isinstance(spell, SummonerSpell):
+        scdr = 0.0
+        for item in items:
+            name = item.get("displayName")
+            r = spellDatabase.get(name)
+            if r is None:
+                r = 0.0
+            scdr = scdr + r
+        return scdr
+    return 0.0
+
+
+def loadLevelsAndItems():
     logging.debug('gc* ll0 attempting to load levels (0/1)')
     try:
-        r = requests.get("https://127.0.0.1:2999/liveclientdata/playerlist",verify = False)
+        r = requests.get("https://127.0.0.1:2999/liveclientdata/playerlist", verify=False)
     except Exception as e:
         return
     j = json.loads(r.content)
     for player in j:
         if player.get("team", "") != myteam:
-            champ = player.get("championName","")
-            lvl = player.get("level","")
-            dataholder.setLvl(champ,lvl)
+            champ = player.get("championName", "")
+            lvl = player.get("level", "")
+            dataholder.setLvl(champ, lvl)
+            items = player.get("items")
+            dataholder.setItems(champ, items)
+
     logging.debug('gc*  ll1 loadlevel success')
 
-myteam = "empty"
-def loadWithApi():
 
+myteam = "empty"
+
+
+def loadWithApi():
     logging.debug('gc3 loading with api')
     # api_connection_data = lcu.connect("D:/Program/RiotGames/LeagueOfLegends")
     try:
         r = requests.get("https://127.0.0.1:2999/liveclientdata/playerlist", verify=False)
     except Exception as e:
-        return None,None
-    activeplayer = requests.get("https://127.0.0.1:2999/liveclientdata/activeplayername", verify = False)
+        return None, None
+    activeplayer = requests.get("https://127.0.0.1:2999/liveclientdata/activeplayername", verify=False)
     activeplayer = json.loads(activeplayer.content)
+    status = requests.get("https://127.0.0.1:2999/liveclientdata/gamestats", verify=False)
+    gametype = json.loads(status.content).get("gameMode")
     logging.debug('gc4 activeplayer ' + activeplayer)
     j = json.loads(r.content)
     li = []
@@ -769,16 +855,20 @@ def loadWithApi():
         name = player.get("summonerName", "")
         if name == activeplayer:
             myteam = player.get("team", "")
-        li.append(player.get("summonerName",""))
+        li.append(player.get("summonerName", ""))
     li.append(myteam)
-    logging.debug('gc5 using for topic: '+str(li))
+    logging.debug('gc5 using for topic: ' + str(li))
     index = 0
     ultindex = 10
     dataholder.clearButtons()
+    gtcdr = spellDatabase.get(gametype)
+    if gtcdr is None:
+        runecdr = 0.0
+    dataholder.setgameTypeCdr(gtcdr)
     for player in j:
-        if player.get("team","") != myteam:
-            name = player.get("summonerName","")
-            champ = player.get("championName","")
+        if player.get("team", "") != myteam:
+            name = player.get("summonerName", "")
+            champ = player.get("championName", "")
             sp1 = player.get("summonerSpells").get("summonerSpellOne").get("displayName")
             sp2 = player.get("summonerSpells").get("summonerSpellTwo").get("displayName")
 
@@ -786,33 +876,43 @@ def loadWithApi():
                 temp = sp2
                 sp2 = sp1
                 sp1 = temp
-            print(sp1,sp2)
-            logging.debug(' gc6_0 enemy '+name+' '+champ+' '+sp1)
 
-            dataholder.addSpell(champ + 'Spell1', SummonerSpell(champ,sp1,index))
-            dataholder.addButton(champ + 'Spell1',index)
+            runecdr = 0.0
+            runes = player.get('runes')
+            for rune in runes:
+                rune = runes.get(rune)
+                name = rune.get("displayName")
+                cdr = spellDatabase.get(name)
+                if cdr is not None:
+                    runecdr = runecdr + cdr
+            logging.debug(' gc6_0 enemy ' + name + ' ' + champ + ' ' + sp1)
+
+            dataholder.addSpell(champ + 'Spell1', SummonerSpell(champ, sp1, index, runecdr))
+            dataholder.addButton(champ + 'Spell1', index)
             temp = c
-            c.settSpell.emit(index,sp1)
-            index = index +1
+            c.settSpell.emit(index, sp1)
+            index = index + 1
 
-            logging.debug(' gc6_1 enemy '+name+' '+champ+' '+sp2)
-            dataholder.addSpell(champ + 'Spell2', SummonerSpell(champ, sp2, index))
+            logging.debug(' gc6_1 enemy ' + name + ' ' + champ + ' ' + sp2)
+            dataholder.addSpell(champ + 'Spell2', SummonerSpell(champ, sp2, index, runecdr))
             dataholder.addButton(champ + 'Spell2', index)
-            c.settSpell.emit(index,sp2)
-            index = index +1
-            dataholder.addSpell(champ + 'Ult', UltSpell(champ,110,ultindex))
+            c.settSpell.emit(index, sp2)
+            index = index + 1
+            dataholder.addSpell(champ + 'Ult', UltSpell(champ, 110, ultindex, runecdr))
             dataholder.addButton(champ + 'Ult', ultindex)
-            #set sp1, sp2, champName in window (change setterWindow with list of champions and spells)
-            c.setterChampion.emit(ultindex-10,champ)
+            # set sp1, sp2, champName in window (change setterWindow with list of champions and spells)
+            c.setterChampion.emit(ultindex - 10, champ)
             ultindex = ultindex + 1
             logging.debug(' gc6_2 enemy done')
     topic = str(hashNames(li))
     logging.debug('gc7 sucessfull loading with api')
     return topic, str(java_string_hashcode(activeplayer))
+
+
 def on_message(client, userdata, message):
     msg = message.payload.decode("utf-8")
-    logging.debug('st4 reciveing mqtt message '+str(msg))
-    #print('message', msg)
+    logging.debug('st4 reciveing mqtt message ' + str(msg))
+    # print('message', msg)
     msg = msg.split('_')
     if msg[0] == 'a':
         saveTrack(msg[1], msg[2])
@@ -826,42 +926,51 @@ def on_message(client, userdata, message):
         blockButton(msg[1])
         return
     return
+
+
 class Mqttclient():
     def __init__(self):
         self.clientHolder = None
         self.connectionInfo = 'will connect once game starts'
-    def connect(self, topicsuffix,clientIdSuffix):
-        #print('connecting mqtt client')
+
+    def connect(self, topicsuffix, clientIdSuffix):
+        # print('connecting mqtt client')
         if topicsuffix is None:
             return
-        broker_address="mqtt.eclipse.org"
-        self.clientID = "observer"+clientIdSuffix
+        broker_address = "mqtt.eclipse.org"
+        self.clientID = "observer" + clientIdSuffix
         self.topic = "SpellTracker2/Match" + topicsuffix
         client = mqtt.Client(self.clientID)
         client.on_message = on_message
-        #print(clientID,topic)
+        # print(clientID,topic)
         client.connect(broker_address)
-        self.connectionInfo = 'connected\n'+'topic ' + self.topic + '\nclient id '+self.clientID
+        self.connectionInfo = 'connected\n' + 'topic ' + self.topic + '\nclient id ' + self.clientID
         c.showmqtt.emit()
         client.subscribe(self.topic)
         client.loop_start()
         self.clientHolder = client
         logging.debug('gc8 sucessfull mqtt connect')
-    def send(self,msg):
+
+    def send(self, msg):
         if self.clientHolder is not None:
-            logging.debug('st2 publishing '+str(msg))
+            logging.debug('st2 publishing ' + str(msg))
             self.clientHolder.publish(self.topic, msg)
+
     def disconnectmqtt(self):
         if self.clientHolder is not None:
             self.clientHolder.disconnect()
+
     def renonnectmqtt(self):
         logging.debug('gc0123 user issued reconnect. loading and connecting mqtt (0/8)')
         self.disconnectmqtt()
-        topicsuffix,clientIdSuffix = loadWithApi()
-        self.connect(topicsuffix,clientIdSuffix)
-        #reset the colors of buttons
+        topicsuffix, clientIdSuffix = loadWithApi()
+        self.connect(topicsuffix, clientIdSuffix)
+        # reset the colors of buttons
         c.updateColors.emit()
+
+
 mqttclient = Mqttclient()
+
 
 def java_string_hashcode(s):
     """Mimic Java's hashCode in python 2"""
@@ -876,8 +985,10 @@ def java_string_hashcode(s):
     for c in s:
         h = int((((31 * h + ord(c)) ^ 0x80000000) & 0xFFFFFFFF) - 0x80000000)
     return h
+
+
 def hashNames(li):
-    #print('hashNames', li)
+    # print('hashNames', li)
     li = sorted(li)
     con = ''
     for e in li:
@@ -885,16 +996,19 @@ def hashNames(li):
     h = java_string_hashcode(con)
     return h
 
+
 activeGameFound = False
 tries = 1
+
+
 def testConnection(s):
     global activeGameFound
-    logging.debug('gc1 trying to find game/ updating time and levels. game found :'+str(activeGameFound))
-    #print(activeGameFound)
+    logging.debug('gc1 trying to find game/ updating time and levels. game found :' + str(activeGameFound))
+    # print(activeGameFound)
     global tries
     try:
-        r = s.get("https://127.0.0.1:2999/liveclientdata/gamestats", verify = False)
-        if r.status_code !=200:
+        r = s.get("https://127.0.0.1:2999/liveclientdata/gamestats", verify=False)
+        if r.status_code != 200:
             return
         if activeGameFound is False:
             activeGameFound = True
@@ -904,7 +1018,7 @@ def testConnection(s):
             gameTime.setGameTime(currentTime)
             topicsuffix, clientIdSuffix = loadWithApi()
             mqttclient.connect(topicsuffix, clientIdSuffix)
-            loadLevels()
+            loadLevelsAndItems()
             tries = 1
             startShowTrackThread()
             return
@@ -912,54 +1026,67 @@ def testConnection(s):
         j = json.loads(r.content)
         currentTime = j.get("gameTime")
         gameTime.setGameTime(currentTime)
-        loadLevels()
+        loadLevelsAndItems()
         return
     except Exception as e:
-        logging.debug('gc2 encountered (network)error in gamecheck'+str(e))
-        #print(tries)
-        if tries == 3 :
-            #print(tries, 1)
+        logging.debug('gc2 encountered (network)error in gamecheck' + str(e))
+        # print(tries)
+        if tries == 3:
+            # print(tries, 1)
             c.status.emit('')
-            tries = tries +1
+            tries = tries + 1
         elif tries == 2:
             c.status.emit('Will keep looking even when hiding')
             tries = tries + 1
-        elif tries  ==1:
-            #print(tries, 'no active game')
+        elif tries == 1:
+            # print(tries, 'no active game')
             c.status.emit('Looking for active game...')
             tries = tries + 1
         if activeGameFound:
-            #print('disconnect previous mqtt connection')
+            # print('disconnect previous mqtt connection')
             mqttclient.disconnectmqtt()
         activeGameFound = False
         return
+
+
 def gameCheck(s):
     logging.debug('gc0 gameCheck thread loop alive (0/8 connection)')
     while True:
         testConnection(s)
         time.sleep(10)
+
+
 def startThreads():
     logging.debug('m4 starting threads. looking for game')
     s = requests.Session()
-    t = threading.Thread(name='activeGameSearch', target = lambda: gameCheck(s))
+    t = threading.Thread(name='activeGameSearch', target=lambda: gameCheck(s))
     t.setDaemon(True)
     t.start()
-    t3 = threading.Thread(name='hotkey', target= loadHotkey)
+    t3 = threading.Thread(name='hotkey', target=loadHotkey)
     t3.setDaemon(True)
     t3.start()
+
+
 def startShowTrackThread():
     logging.debug('s0 starting show and time thread')
-    t2 = threading.Thread(name='advanceTime', target = gameTimeThread)
+    t2 = threading.Thread(name='advanceTime', target=gameTimeThread)
     t2.setDaemon(True)
     t2.start()
+
+
 def gameTimeThread():
     global activeGameFound
     while activeGameFound:
         time.sleep(1)
         timeAndShow()
     logging.error('s2 gameTime Thread active game lost. no longer running timeAndShow')
+
+
 import keyboard
+
 hotkeyFilePath = ''
+
+
 def loadHotkey():
     global hotkeyFilePath
     hotkeyFilePath = os.path.join(appdatadir.overlaydir, "hotkey.txt")
@@ -972,40 +1099,76 @@ def loadHotkey():
         f = open(hotkeyFilePath, "w")
         f.write(keys)
         f.close()
-    keyboard.add_hotkey(keys,reactToHotKey)
+    keyboard.add_hotkey(keys, reactToHotKey)
+
+
 def reactToHotKey():
     global activeGameFound
     if activeGameFound:
-        c.hotkeyklicked.emit()
+        c.hotkeyClicked.emit()
+
 
 class AppDataDir():
     def __init__(self):
         self.overlaydir = os.path.join(os.getenv('APPDATA'), "SummonerTrackerOverlay")
+
+
 appdatadir = AppDataDir()
 from datetime import datetime
 from datetime import date
+
+
 def saveCurrentLogDate(path):
     f = open(path, "w")
     f.write(str(date.today()))
     f.close()
+
+
+spellDatabase = {
+    'Heal': Spell('h', 240),
+    'Ghost': Spell('ghost', 210),
+    'Barrier': Spell('barr', 180),
+    'Exhaust': Spell('exh', 210),
+    'Clarity': Spell('clarity', 240),
+    'Flash': Spell('f', 300),
+    'HexFlash': Spell('f', 300),
+    'Teleport': Spell('tp', 240),
+    'Smite': Spell('smite', 15),
+    'Cleanse': Spell('cleanse', 210),
+    'Ignite': Spell('ign', 180),
+    'Mark': Spell('mark', 80),
+    'Dash': Spell('mark', 80),
+    'Challenging Smite': Spell('smite', 15),
+    'Chilling Smite': Spell('smite', 15),
+    'Poro Toss': Spell('p-mark', 80),
+    'Poro Dash': Spell('p-dash', 80),
+    'To the King!': Spell('king', 10),
+    'Resuscitate': Spell('rev', 100),
+    'Warp': Spell('warp', 15),
+    'Ionial Boots of Lucidity': 10.0,
+    'ARAM': 40.0,
+    'Inspiration': 5.0
+}
+
 if __name__ == '__main__':
     import logging
+
     try:
         os.mkdir(appdatadir.overlaydir)
     except FileExistsError:
         pass
     debugpath = os.path.join(appdatadir.overlaydir, "debug.log")
-    logStartPath = os.path.join(appdatadir.overlaydir,"startLogdate.txt")
+    logStartPath = os.path.join(appdatadir.overlaydir, "startLogdate.txt")
     try:
         with open(logStartPath) as f:
             logStartDate = f.read()
             if logStartDate == '':
                 saveCurrentLogDate(logStartPath)
             logStartDate = datetime.strptime(logStartDate, '%Y-%m-%d').date()
-            r = date.today()-logStartDate
+            r = date.today() - logStartDate
             r = r.days
             if r > 7:
-                #clear log files every 7 days
+                # clear log files every 7 days
                 f = open(debugpath, "w")
                 f.write('')
                 f.close()
