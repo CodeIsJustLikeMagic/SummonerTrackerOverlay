@@ -3,10 +3,13 @@ SummonerTracker Overlay
 
 An Overlay intended for Tracking Summoner Spells and sharing them with teammates.
 
+[**Download here**](https://github.com/CodeIsJustLikeMagic/SummonerTrackerClientP/releases/latest)
+
 [Screenshots](https://imgur.com/a/Dxjq56W)
 
 How to use it
 ------------
+
 * Press the hotkey (default: ^) to open the Setter Window in game and start timing summoner spells.
 * The summoner spell buttons will assume that the spell has been used 7 seconds ago. 
 * The "-30 sec" Buttons will Modify existing Timers by subtracting 30 seconds.
@@ -20,19 +23,31 @@ From there you can move the Information Display Window and the Setter Window and
 
 The overlay is not visible if you play in fullscreen mode.
 
-[Download here](https://github.com/CodeIsJustLikeMagic/SummonerTrackerClientP/releases/latest)
-
 This Tracker DOES NOT track spells automatically. You have to start the timers yourself.
+
+lol Patches and cdr
+-------------
+* summoner spell cooldowns get loaded from [Community Dragon](https://www.communitydragon.org/) (a centralized League of Legends game data and asset provider run by the community)
+  * All cooldows get updated once community dragen is up to date with a lol patch
+  * The data gets saved in %Appdata%\SummonerTrackerOverlay\CDragon and reloaded every 7 days
+  
+* summoner spell cdr from the aram aura, runes and boots is taken into account
+  * I can only get the keystone, and the name of the primary tree and the secondary tree with the Live Game Api. So I'm currently assuming that whenever a player has the "Inspiration" Tree, he is running Cosmic Insight.
+  
+* teleport cooldown gets calculated according to the level of the champion.
+
+* ulimate cooldows are currently not loaded via api. They are allways tracked with 110 seconds cooldown regardless of champion.
 
 How it works
 ------------
-The riot live game api is used to find current game information to set the champions and spells in the Setter Overlay.
-(Please be aware that the ulimate cooldows are currently not loaded via api. They are allways tracked with 110 seconds cooldown regardless of champion. Also I'm completely ignoring cdr runes and items. Teleport gets calculated with the champion level though.)
+* The riot [live game api](https://developer.riotgames.com/docs/lol#league-client-api) is used to find current game information to set the champions and spells in the Setter Overlay.
 
-Information is shared via mqtt. Your team information (summoner names and teamid) is used to create the topic. All your team members listen and publish to the same topic.
+* Summoner Spell Cooldowns are loaded from Community Dragon.
 
-The positions of the windows and the hotkey are saved in `%Appdata%\SummonerTrackerOverlay` after you have started the overlay once.
-This is also where you can find a log file. The log gets cleared every 7 days.
+* Information is shared via mqtt. Your team information (summoner names and teamid) is used to create the topic. All your team members listen and publish to the same topic.
+
+* The Positions of the windows and the hotkey are saved in `%Appdata%\SummonerTrackerOverlay` after you have started the overlay once.
+* This is also where you can find a log file. The log gets cleared every 7 days.
 
 Legal Stuff
 --------
