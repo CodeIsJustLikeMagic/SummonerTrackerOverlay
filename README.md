@@ -30,22 +30,16 @@ lol Patches and cdr
 * summoner spell cooldowns get loaded from [Community Dragon](https://www.communitydragon.org/) (a centralized League of Legends game data and asset provider run by the community)
   * All cooldows get updated once community dragen is up to date with a lol patch
   * The data gets saved in %Appdata%\SummonerTrackerOverlay\CDragon and reloaded every 7 days
-  
 * summoner spell cdr from the aram aura, runes and boots is taken into account
   * I can only get the keystone, and the name of the primary tree and the secondary tree with the Live Game Api. So I'm currently assuming that whenever a player has the "Inspiration" Tree, he is running Cosmic Insight.
-  
 * teleport cooldown gets calculated according to the level of the champion.
-
 * ulimate cooldows are currently not loaded via api. They are allways tracked with 110 seconds cooldown regardless of champion.
 
 How it works
 ------------
 * The riot [live game api](https://developer.riotgames.com/docs/lol#league-client-api) is used to find current game information to set the champions and spells in the Setter Overlay.
-
-* Summoner Spell Cooldowns are loaded from Community Dragon.
-
+* Summoner Spell Cooldowns are loaded from [Community Dragon](https://www.communitydragon.org/).
 * Information is shared via mqtt. Your team information (summoner names and teamid) is used to create the topic. All your team members listen and publish to the same topic.
-
 * The Positions of the windows and the hotkey are saved in `%Appdata%\SummonerTrackerOverlay` after you have started the overlay once.
 * This is also where you can find a log file. The log gets cleared every 7 days.
 
