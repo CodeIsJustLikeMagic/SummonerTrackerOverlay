@@ -300,8 +300,13 @@ class SetterWindow(QDialog):
     def setspelllabel(self, index, val):
         logging.debug('     gc* setting spell label ' + str(index) + ' ' + str(val))
         self.spellButtons[index].setText(val)
-        if index < 10:
-            self.spellButtons[index].spellName = val
+        self.spellButtons[index].spellName = val
+
+        #set icon
+        spell = spellDatabase.get(val)
+        icon = spell.icon
+
+        print('alive')
 
     def resetPos(self):
         centerPoint = QDesktopWidget().availableGeometry().center()
@@ -344,7 +349,7 @@ class SetterWindow(QDialog):
                 newPos = self.mapFromGlobal(currPos + diff)
                 self.move(newPos)
                 self.__mouseMovePos = globalPos
-^^
+
     def mouseReleaseEvent(self, event):
 
         self.savePosition()
@@ -627,18 +632,22 @@ class OverlayWindow(QDialog):
 
 
 class Spell():
-    def __init__(self, shortName, cd):
+    def __init__(self, shortName, cd, icon):
         self.shortName = shortName
         self.cd = cd
+        self.icon = icon
 
 def calculateCD(spell):
     gtcdr = dataholder.getgameTypeCdr()
+    cd = spell.cd
+    if spell.spellname == 'tp':
+        cd = tpCD(spell)
     if gtcdr == spellDatabase.get("ARAM"):
-        cd = spell.cd * (1.0 - (spell.runecdr / 100.0))
+        cd = cd * (1.0 - (spell.runecdr / 100.0))
         cdr = gtcdr + getItemCDR(spell)
         return cd * (1.0 - ((gtcdr + getItemCDR(spell)) / 100.0))
     else:
-        return spell.cd * (1.0 - ((getItemCDR(spell) + spell.runecdr) / 100.0))
+        return cd * (1.0 - ((getItemCDR(spell) + spell.runecdr) / 100.0))
 
 class TrackEntry():
     def __init__(self, spell, modifier):
@@ -770,6 +779,7 @@ class Dataholder():
             self.lvls[champion] = lvl
         logging.debug(' gc* ll* set level for ' + champion + ' ' + str(lvl))
 
+
     def addTrack(self, id, trackentry):
         logging.debug('st7 attempting to add track')
         with datalock:
@@ -783,6 +793,10 @@ class Dataholder():
             track.endTrack = float(0)
             sortTracks()
 
+    def getLvL(self, champion):
+        with datalock:
+            ret = self.lvls.get(champion)
+        return ret
     def getItem(self, champion):
         with datalock:
             ret = self.items.get(champion)
@@ -1132,7 +1146,7 @@ def reactToHotKey():
 class AppDataDir():
     def __init__(self):
         self.overlaydir = os.path.join(os.getenv('APPDATA'), "SummonerTrackerOverlay")
-
+        self.jsondir = os.path.join(self.overlaydir, "CDragon")
 
 appdatadir = AppDataDir()
 from datetime import datetime
@@ -1144,32 +1158,117 @@ def saveCurrentLogDate(path):
     f.write(str(date.today()))
     f.close()
 
+# tp CoolDown Hardcoded!!!!!
+def tpCD(spell):
+    lvl = dataholder.getLvL(spell.champion)
+    ret = (lvl-1) * ((240-420)/17)+420
+    print('alive')
+    return ret
 
 spellDatabase = {
-    'Heal': Spell('h', 240),
-    'Ghost': Spell('ghost', 210),
-    'Barrier': Spell('barr', 180),
-    'Exhaust': Spell('exh', 210),
-    'Clarity': Spell('clarity', 240),
-    'Flash': Spell('f', 300),
-    'HexFlash': Spell('f', 300),
-    'Teleport': Spell('tp', 240),
-    'Smite': Spell('smite', 15),
-    'Cleanse': Spell('cleanse', 210),
-    'Ignite': Spell('ign', 180),
-    'Mark': Spell('mark', 80),
-    'Dash': Spell('mark', 80),
-    'Challenging Smite': Spell('smite', 15),
-    'Chilling Smite': Spell('smite', 15),
-    'Poro Toss': Spell('p-mark', 80),
-    'Poro Dash': Spell('p-dash', 80),
-    'To the King!': Spell('king', 10),
-    'Resuscitate': Spell('rev', 100),
-    'Warp': Spell('warp', 15),
+    'Heal': Spell('h', 240, 'Heal'),
+    'Ghost': Spell('ghost', 210, 'Ghost'),
+    'Barrier': Spell('barr', 180, 'Barrier'),
+    'Exhaust': Spell('exh', 210 ,'Exhaust'),
+    'Clarity': Spell('clarity', 240, 'Clarity'),
+    'Flash': Spell('f', 300, 'Flash'),
+    'HexFlash': Spell('f', 300, 'Flash'),
+    'Teleport': Spell('tp', 240, 'Teleport'),
+    'Smite': Spell('smite', 15, 'Smite'),
+    'Cleanse': Spell('cleanse', 210, 'Cleanse'),
+    'Ignite': Spell('ign', 180, 'Ignite'),
+    'Mark': Spell('mark', 80, 'Mark'),
+    'Dash': Spell('mark', 80, 'Mark'),
+    'Challenging Smite': Spell('smite', 15, 'Smite'),
+    'Chilling Smite': Spell('smite', 15, 'Smite'),
+    'Poro Toss': Spell('p-mark', 80, 'Poro Toss'),
+    'Poro Dash': Spell('p-dash', 80, 'Poro Toss'),
+    'To the King!': Spell('king', 10, 'To the King!'),
+    'Resuscitate': Spell('rev', 100, 'Clarity'),
+    'Warp': Spell('warp', 15, 'Teleport'),
+
+
     'Ionial Boots of Lucidity': 10.0,
     'ARAM': 40.0,
     'Inspiration': 5.0
 }
+def initCDragon():
+    if readSummonerSpellsFromFile():
+        updateCDragon()
+        readSummonerSpellsFromFile()
+
+def updateCDragon():
+    logging.debug('m? ucd0 updating game data with community dragon')
+    updateSummonSpellJson()
+
+def updateSummonerIcon(name, iconPath):
+    if len(name) == 0:
+        return
+    name.lower()
+    iconPath = iconPath.split('/')
+    iconPath = iconPath[len(iconPath)-1].lower()
+    try:
+        filepath = os.path.join(appdatadir.jsondir, name+'.png')
+        f = open(filepath, 'wb')
+        data = requests.get("http://raw.communitydragon.org/latest/game/data/spells/icons2d/"+iconPath, verify=False).content
+        f.write(data)
+        f.close()
+    except Exception as e:
+        print(e)
+        return
+
+def updateSummonSpellJson():
+    logging.debug('m? ucd1 updating summonerspell cd and icons')
+    try:
+        r = requests.get("http://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/summoner-spells.json", verify=False)
+    except Exception as e:
+        logging.debug('m? ucdError '+e)
+        return
+    j = json.loads(r.content)
+    for spell in j:
+        #find spell image and save it
+        name = spell.get('name')
+        iconPath = spell.get('iconPath')
+        updateSummonerIcon(name,iconPath)
+    try:
+        os.mkdir(appdatadir.jsondir)
+    except FileExistsError:
+        pass
+    filepath = os.path.join(appdatadir.jsondir, "summoner-spells.json")
+    print(filepath)
+    with open(filepath, 'w') as outfile:
+        json.dump(j, outfile)
+    logging.debug('m? ucd2 updating summonerspell cd and icons success')
+
+def readSummonerSpellsFromFile():
+    filepath = os.path.join(appdatadir.jsondir, "summoner-spells.json")
+    try:
+        with open(filepath) as json_file:
+            data = json.load(json_file)
+            print(data)
+            for spell in data:
+                name = spell.get('name')
+                cd = spell.get('cooldown')
+                print(name, cd)
+                spell = spellDatabase.get(name)
+                if spell is None:
+                    spell = Spell(name,cd,name)
+                spell.cd = cd
+                spellDatabase[name] = spell
+        return True
+    except IOError:
+        return False
+
+"http://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/perks.json"
+def ultcd(champId):
+    try:
+        r = requests.get("https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/champions/101.json", verify=False)
+    except Exception as e:
+        print(e)
+        return
+    j = json.loads(r.content)
+    print(j)
+
 
 if __name__ == '__main__':
     import logging
@@ -1180,6 +1279,7 @@ if __name__ == '__main__':
         pass
     debugpath = os.path.join(appdatadir.overlaydir, "debug.log")
     logStartPath = os.path.join(appdatadir.overlaydir, "startLogdate.txt")
+    print(debugpath)
     try:
         with open(logStartPath) as f:
             logStartDate = f.read()
@@ -1194,11 +1294,14 @@ if __name__ == '__main__':
                 f.write('')
                 f.close()
                 saveCurrentLogDate(logStartPath)
+                #update game ressouces every 7 days
+                updateCDragon()
     except FileNotFoundError:
         saveCurrentLogDate(logStartPath)
         f = open(debugpath, "w")
         f.write('')
         f.close()
+        updateCDragon()
 
     logging.basicConfig(
         level=logging.DEBUG,
@@ -1208,6 +1311,9 @@ if __name__ == '__main__':
             logging.StreamHandler()
         ]
     )
+
+    initCDragon()
+
     logging.debug('m0 overlay started! (0/4 startup, 0/5 entire run)')
     app = QApplication([])
     setterWindow = SetterWindow()
