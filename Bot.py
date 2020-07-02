@@ -32,6 +32,7 @@ class Communicate(QObject):
     showmqtt = pyqtSignal()
     updateColors = pyqtSignal()
     block = pyqtSignal(int)
+    toogleShow = pyqtSignal()
 
 
 c = Communicate()
@@ -169,6 +170,7 @@ class SetterWindow(QDialog):
         c.unsetAll.connect(self.clearAllButtons)
         c.updateColors.connect(self.updateColors)
         c.block.connect(lambda index: self.blockButton(index))
+        c.toogleShow.connect(lambda: self.toogleShow())
         self.lastAction = time.time()
         self.show()
         try:
@@ -183,6 +185,7 @@ class SetterWindow(QDialog):
             pass
         self.hide()
         logging.debug('m1 setter window created')
+        self.allwaysShow = False
 
     def getButton(self, index):
         if index >= 10:
@@ -231,7 +234,18 @@ class SetterWindow(QDialog):
             self.hide()
         # show but dont steal focus on hotkeypressnnn
         # hide again if hotkey is pressed again
-
+    def policyAllwaysShow(self):
+        self.setHidden(False)
+        self.allwaysShow = True
+    def policyhideWhenInactive(self):
+        self.hide()
+        self.allwaysShow = False
+    def toogleShow(self):
+        # change policy. toogle between allwaysshow and hide when inactive
+        if self.allwaysShow:
+            self.policyhideWhenInactive()
+        else:
+            self.policyAllwaysShow()
     def clearAllButtons(self):
         for num, lbl in enumerate(self.championLabels, start=1):
             lbl.setText('player' + str(num))
@@ -304,11 +318,13 @@ class SetterWindow(QDialog):
         self.setHidden(False)
         self.ismovable = True
         self.moveLabel.setHidden(False)
+        self.policyAllwaysShow()
 
     def unmovable(self):
         self.ismovable = False
         self.moveLabel.hide()
         self.hide()
+        self.policyhideWhenInactive()
 
     def mousePressEvent(self, event):
         # print('mouse Press Event')
@@ -328,10 +344,9 @@ class SetterWindow(QDialog):
                 newPos = self.mapFromGlobal(currPos + diff)
                 self.move(newPos)
                 self.__mouseMovePos = globalPos
-
+^^
     def mouseReleaseEvent(self, event):
-        self.unmovable()
-        c.unmovable.emit()
+
         self.savePosition()
         if self.__mousePressPos is not None:
             moved = event.globalPos() - self.__mousePressPos
@@ -341,7 +356,8 @@ class SetterWindow(QDialog):
 
     def waitandSeeIfIdle(self):
         self.lastAction = time.time()
-        QTimer.singleShot(6000, self.checkStillIdle)
+        if not self.allwaysShow:
+            QTimer.singleShot(6000, self.checkStillIdle)
 
     def checkStillIdle(self):
         if time.time() - self.lastAction >= 5.8:
@@ -479,18 +495,18 @@ class OverlayWindow(QDialog):
         trayIcon = QSystemTrayIcon(icon, self)
         self.setWindowIcon(icon)
         menu = QMenu()
-        openHotKeyFileAction = menu.addAction("set Hotkey")
+        openHotKeyFileAction = menu.addAction("Set Hotkey")
         global hotkeyFilePath
         openHotKeyFileAction.triggered.connect(lambda: os.startfile(hotkeyFilePath))
         moveAction = menu.addAction("Move")
-        moveAction.triggered.connect(self.movable)
+        moveAction.triggered.connect(self.toggleMovable)
         resetPosAction = menu.addAction("Reset Position")
         resetPosAction.triggered.connect(self.resetPos)
-        toggleSetterAction = menu.addAction("Toggle Setter Window")
-        toggleSetterAction.triggered.connect(lambda: c.hotkeyClicked.emit())
-        showmqttInfoAction = menu.addAction("show mqtt info")
+        toggleSetterAction = menu.addAction("Toggle allays show Setter Window")
+        toggleSetterAction.triggered.connect(lambda: c.toogleShow.emit())
+        showmqttInfoAction = menu.addAction("Show mqtt info")
         showmqttInfoAction.triggered.connect(self.showMQTTInfo)
-        newConnection = menu.addAction('new Connection')
+        newConnection = menu.addAction('Reload')
         newConnection.triggered.connect(mqttclient.renonnectmqtt)
         exitAction = menu.addAction("Exit")
         exitAction.triggered.connect(self.close)
@@ -560,6 +576,12 @@ class OverlayWindow(QDialog):
         f.write(str(newPos.x()) + ' ' + str(newPos.y()))
         f.close()
 
+    def toggleMovable(self):
+        if self.ismovable:
+            self.unmovable()
+            c.unmovable.emit()
+        else:
+            self.movable()
     def movable(self):
         c.move.emit()
         self.ismovable = True
@@ -595,8 +617,7 @@ class OverlayWindow(QDialog):
             self.__mouseMovePos = globalPos
 
     def mouseReleaseEvent(self, event):
-        self.unmovable()
-        c.unmovable.emit()
+
         self.savePosition()
         if self.__mousePressPos is not None:
             moved = event.globalPos() - self.__mousePressPos
@@ -617,7 +638,7 @@ def calculateCD(spell):
         cdr = gtcdr + getItemCDR(spell)
         return cd * (1.0 - ((gtcdr + getItemCDR(spell)) / 100.0))
     else:
-        return spell.cd * (1.0 - ((getItemCDR(spell) + spell.basecdr) / 100.0))
+        return spell.cd * (1.0 - ((getItemCDR(spell) + spell.runecdr) / 100.0))
 
 class TrackEntry():
     def __init__(self, spell, modifier):
