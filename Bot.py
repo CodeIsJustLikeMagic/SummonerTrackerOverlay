@@ -5,7 +5,7 @@ from PyQt5 import QtCore
 from PyQt5.QtGui import QFont, QIcon, QColor
 from PyQt5.QtWidgets import QApplication, QLabel, QDialog, QVBoxLayout, QSystemTrayIcon, QMenu, QDesktopWidget, \
     QGraphicsDropShadowEffect, QPushButton, QGridLayout
-from PyQt5.QtCore import Qt, pyqtSignal, QObject, QTimer
+from PyQt5.QtCore import Qt, pyqtSignal, QObject, QTimer, QSize
 import paho.mqtt.client as mqtt
 import threading
 from numpy import unicode
@@ -23,8 +23,8 @@ class Communicate(QObject):
     resetPos = pyqtSignal()
     move = pyqtSignal()
     unmovable = pyqtSignal()
-    colorSet = pyqtSignal(int)
-    colorUnset = pyqtSignal(int)
+    styleactiveButton = pyqtSignal(int)
+    styleupButton = pyqtSignal(int)
     exitC = pyqtSignal()
     hotkeyClicked = pyqtSignal()
     status = pyqtSignal(str)
@@ -52,8 +52,8 @@ class SetterWindow(QDialog):
         grid_layout = QGridLayout()
         self.setLayout(grid_layout)
         self.ismovable = False
-        self.setStyle = "color: rgb(150,150,150); background-color: rgb(90,90,90)"
-        self.unSetStyle = "color: rgb(230,230,230); background-color: rgb(150,150,150)"
+        self.setStyledark = "color: rgb(150,150,150); background-color: rgb(90,90,90)"
+        self.unSetStylelight = "color: rgb(230,230,230); background-color: rgb(150,150,150)"
         self.redStyle = "color: rgb(230,230,230); background-color: rgb(200,50,50)"
 
         font = QFont('Serif', 11)
@@ -73,13 +73,14 @@ class SetterWindow(QDialog):
             grid_layout.addWidget(champlbl, x * 2, 0)
             self.championLabels.append(champlbl)
             champsult = SpellButton("ult")
+            #champsult.setFixedSize(70, 35)
             champsult.setFont(font)
             effect = QGraphicsDropShadowEffect()
             effect.setBlurRadius(0)
             effect.setColor(QColor(0, 0, 0, 255))
             effect.setOffset(1)
             champsult.setGraphicsEffect(effect)
-            champsult.setStyleSheet(self.unSetStyle)
+            champsult.setStyleSheet(self.unSetStylelight)
             grid_layout.addWidget(champsult, 1 + (x * 2), 0)
             self.ult.append(champsult)
 
@@ -87,6 +88,7 @@ class SetterWindow(QDialog):
         self.minButtons = []
         for x in range(10):
             spellButton = SpellButton("spell")
+            spellButton.setFixedSize(35, 35)
             spellButton.setFont(font)
             effect = QGraphicsDropShadowEffect()
             effect.setBlurRadius(0)
@@ -103,14 +105,14 @@ class SetterWindow(QDialog):
             effect.setColor(QColor(0, 0, 0, 255))
             effect.setOffset(1)
             minButton.setGraphicsEffect(effect)
-            minButton.setStyleSheet(self.unSetStyle)
+            minButton.setStyleSheet(self.unSetStylelight)
             grid_layout.addWidget(minButton, x, 2)
             self.minButtons.append(minButton)
         self.moveLabel = QLabel('grab me!')
         self.moveLabel.setFont(font)
         self.moveLabel.setStyleSheet(
             "border: 5px solid white; color: rgb(230,230,230); background-color: rgb(150,150,150)")
-        grid_layout.addWidget(self.moveLabel, 12, 1)
+        grid_layout.addWidget(self.moveLabel, 13, 2)
         self.moveLabel.hide()
 
         self.reloadButton = QPushButton('reload')
@@ -162,8 +164,8 @@ class SetterWindow(QDialog):
         c.settSpell.connect(lambda index, val: self.setspelllabel(index, val))
         c.resetPos.connect(self.resetPos)
         c.move.connect(self.movable)
-        c.colorSet.connect(lambda index: self.setColorButton(index))
-        c.colorUnset.connect(lambda index: self.unsetColorButton(index))
+        c.styleactiveButton.connect(lambda index: self.styleactiveButton(index))
+        c.styleupButton.connect(lambda index: self.unsetColorButton(index))
         c.exitC.connect(self.close)
         c.unmovable.connect(self.unmovable)
         c.hotkeyClicked.connect(self.showOnKeyboardPress)
@@ -221,8 +223,7 @@ class SetterWindow(QDialog):
         if event.type() == QtCore.QEvent.HoverLeave:
             self.waitandSeeIfIdle()
             if spellbutton.set:
-                spellbutton.setStyleSheet(self.setStyle)
-                spellbutton.setText(spellbutton.spellName)
+                self.darkButton(spellbutton)
             return True
         return False
 
@@ -254,35 +255,34 @@ class SetterWindow(QDialog):
             btn.spellName = 'spell'
             btn.set = False
             btn.justPressed = False
-            btn.setStyleSheet(self.unSetStyle)
+            btn.setStyleSheet(self.unSetStylelight)
         for btn in self.minButtons:
-            btn.setStyleSheet(self.unSetStyle)
+            btn.setStyleSheet(self.unSetStylelight)
         for num, btn in enumerate(self.ult, start=0):
-            btn.setStyleSheet(self.unSetStyle)
+            btn.setStyleSheet(self.unSetStylelight)
             btn.set = False
             btn.justPressed = False
 
     def updateColors(self):
         for btn in self.spellButtons:
-            btn.setStyleSheet(self.unSetStyle)
+            self.brightButton(btn)
             btn.set = False
         for btn in self.ult:
-            btn.setStyleSheet(self.unSetStyle)
+            self.brightButton(btn)
             btn.set = False
 
         with datalock:
             for id, track in dataholder.tracks.items():
                 if track.endTrack > gameTime.elapsed:
                     btnindex = dataholder.buttons.get(id)
-                    self.setColorButton(btnindex)
+                    self.styleactiveButton(btnindex)
 
     def unsetColorButton(self, index):
         btn = self.getButton(index)
-        btn.setStyleSheet(self.unSetStyle)
+        self.brightButton(btn)
         btn.set = False
-        btn.setText(btn.spellName)
 
-    def setColorButton(self, index):
+    def styleactiveButton(self, index):
         btn = self.getButton(index)
         btn.set = True
         if btn.justPressed:
@@ -290,23 +290,37 @@ class SetterWindow(QDialog):
                 btn.setText('X')
                 btn.setStyleSheet(self.redStyle)
                 return
-        btn.setStyleSheet(self.setStyle)
-
+        self.darkButton(btn)
         return
+
+    def brightButton(self, spellbutton):
+        spellbutton.setStyleSheet(spellbutton.brightStyle)
+        spellbutton.setText(spellbutton.spellName)
+    def darkButton(self, spellbutton):
+        spellbutton.setStyleSheet(spellbutton.darkStyle)
+        spellbutton.setText(spellbutton.spellName)
+    def brightStyle(self, iconName):
+        path = os.path.join(appdatadir.jsondir, iconName + ".png")
+        path = path.replace('\\', '/')
+        #spellButton.setStyleSheet('border-image: url("'+path+'");')
+        return 'border-image: url("' + path + '");'
+    def darkStyle(self, iconName):
+        return self.brightStyle(iconName + 'darken')
 
     def setchampionlabel(self, index, val):
         self.championLabels[index].setText(val)
 
     def setspelllabel(self, index, val):
         logging.debug('     gc* setting spell label ' + str(index) + ' ' + str(val))
-        self.spellButtons[index].setText(val)
-        self.spellButtons[index].spellName = val
-
-        #set icon
+        spellButton = self.spellButtons[index]
+        spellButton.setText('')
         spell = spellDatabase.get(val)
         icon = spell.icon
-
-        print('alive')
+        spellButton.spellName = ''
+        spellButton.brightStyle = self.brightStyle(icon)
+        spellButton.darkStyle = self.darkStyle(icon)
+        #set icon
+        self.brightButton(spellButton)
 
     def resetPos(self):
         centerPoint = QDesktopWidget().availableGeometry().center()
@@ -418,6 +432,8 @@ class SpellButton(QPushButton):
     def __init__(self, text):
         super().__init__(text)
         self.spellName = text
+        self.brightStyle = "color: rgb(230,230,230); background-color: rgb(150,150,150)"
+        self.darkStyle = "color: rgb(150,150,150); background-color: rgb(90,90,90)"
         self.set = False
         self.justPressed = False
 
@@ -436,7 +452,7 @@ def saveTrack(id, endTrack):
     t = trackentry
     dataholder.addTrack(id, trackentry)
     showTrackEntrys()
-    c.colorSet.emit(int(buttonIndex))
+    c.styleactiveButton.emit(int(buttonIndex))
     logging.debug('st10 save track success')
 
 
@@ -732,7 +748,7 @@ def showTrackEntrys():
                 show = show + track.desc + '\n'
             else:
                 btnindex = dataholder.buttons.get(id)
-                c.colorUnset.emit(btnindex)
+                c.styleupButton.emit(btnindex)
     if len(show) > 0:
         show = gameTime.gameTimeMins + '\n\n' + show
     c.text.emit(show)
@@ -1199,13 +1215,14 @@ spellDatabase = {
     'Inspiration': 5.0
 }
 def initCDragon():
-    if readSummonerSpellsFromFile():
+    if not readSummonerSpellsFromFile():
         updateCDragon()
         readSummonerSpellsFromFile()
 
 def updateCDragon():
     logging.debug('m? ucd0 updating game data with community dragon')
     updateSummonSpellJson()
+from PIL import Image, ImageEnhance
 
 def updateSummonerIcon(name, iconPath):
     if len(name) == 0:
@@ -1213,12 +1230,20 @@ def updateSummonerIcon(name, iconPath):
     name.lower()
     iconPath = iconPath.split('/')
     iconPath = iconPath[len(iconPath)-1].lower()
+
     try:
         filepath = os.path.join(appdatadir.jsondir, name+'.png')
+        darken = os.path.join(appdatadir.jsondir, name+'darken.png')
         f = open(filepath, 'wb')
         data = requests.get("http://raw.communitydragon.org/latest/game/data/spells/icons2d/"+iconPath, verify=False).content
+
         f.write(data)
         f.close()
+        im1 = Image.open(filepath)
+        factor = 0.5  # darkens the image
+        enhancer = ImageEnhance.Brightness(im1)
+        im2 = enhancer.enhance(factor)
+        im2.save(darken)
     except Exception as e:
         print(e)
         return
