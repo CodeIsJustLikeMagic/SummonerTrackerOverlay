@@ -4,7 +4,7 @@ from datetime import datetime
 from PyQt5 import QtCore
 from PyQt5.QtGui import QFont, QIcon, QColor
 from PyQt5.QtWidgets import QApplication, QLabel, QDialog, QVBoxLayout, QSystemTrayIcon, QMenu, QDesktopWidget, \
-    QGraphicsDropShadowEffect, QPushButton, QGridLayout
+    QGraphicsDropShadowEffect, QPushButton, QGridLayout, QFrame
 from PyQt5.QtCore import Qt, pyqtSignal, QObject, QTimer, QSize
 import paho.mqtt.client as mqtt
 import threading
@@ -19,7 +19,7 @@ class Communicate(QObject):
     text = pyqtSignal(str)
     initMove = pyqtSignal(int, int)
     setterChampion = pyqtSignal(int, str)
-    settSpell = pyqtSignal(int, str)
+    settSpell = pyqtSignal(int, str, str)
     resetPos = pyqtSignal()
     move = pyqtSignal()
     unmovable = pyqtSignal()
@@ -33,6 +33,7 @@ class Communicate(QObject):
     updateColors = pyqtSignal()
     block = pyqtSignal(int)
     toogleShow = pyqtSignal()
+    updateTimers = pyqtSignal()
 
 
 c = Communicate()
@@ -60,7 +61,7 @@ class SetterWindow(QDialog):
         font.setWeight(62)
 
         self.championLabels = []
-        self.ult = []
+        self.ultButtons = []
         for x in range(5):
             champlbl = QLabel("player" + str(x + 1))
             champlbl.setFont(font)
@@ -82,13 +83,13 @@ class SetterWindow(QDialog):
             champsult.setGraphicsEffect(effect)
             champsult.setStyleSheet(self.unSetStylelight)
             grid_layout.addWidget(champsult, 1 + (x * 2), 0)
-            self.ult.append(champsult)
+            self.ultButtons.append(champsult)
 
         self.spellButtons = []
         self.minButtons = []
         for x in range(10):
             spellButton = SpellButton("spell")
-            spellButton.setFixedSize(35, 35)
+            spellButton.setFixedSize(33, 33)
             spellButton.setFont(font)
             effect = QGraphicsDropShadowEffect()
             effect.setBlurRadius(0)
@@ -108,6 +109,12 @@ class SetterWindow(QDialog):
             minButton.setStyleSheet(self.unSetStylelight)
             grid_layout.addWidget(minButton, x, 2)
             self.minButtons.append(minButton)
+        line = QFrame()
+        line.setFrameShape(QFrame.HLine)
+        line.setFrameShadow(QFrame.Sunken)
+        grid_layout.addWidget(line, 14,4)
+
+
         self.moveLabel = QLabel('grab me!')
         self.moveLabel.setFont(font)
         self.moveLabel.setStyleSheet(
@@ -148,20 +155,20 @@ class SetterWindow(QDialog):
         self.minButtons[8].clicked.connect(lambda: self.ModifySpellTrack(8))
         self.minButtons[9].clicked.connect(lambda: self.ModifySpellTrack(9))
 
-        self.ult[0].clicked.connect(lambda: self.StartSpellTrack(10, 7))
-        self.ult[1].clicked.connect(lambda: self.StartSpellTrack(11, 7))
-        self.ult[2].clicked.connect(lambda: self.StartSpellTrack(12, 7))
-        self.ult[3].clicked.connect(lambda: self.StartSpellTrack(13, 7))
-        self.ult[4].clicked.connect(lambda: self.StartSpellTrack(14, 7))
+        self.ultButtons[0].clicked.connect(lambda: self.StartSpellTrack(10, 7))
+        self.ultButtons[1].clicked.connect(lambda: self.StartSpellTrack(11, 7))
+        self.ultButtons[2].clicked.connect(lambda: self.StartSpellTrack(12, 7))
+        self.ultButtons[3].clicked.connect(lambda: self.StartSpellTrack(13, 7))
+        self.ultButtons[4].clicked.connect(lambda: self.StartSpellTrack(14, 7))
 
         for btn in self.spellButtons:
             btn.installEventFilter(self)
-        for btn in self.ult:
+        for btn in self.ultButtons:
             btn.installEventFilter(self)
 
         self.postxtfilepath = os.path.join(appdatadir.overlaydir, "pos2.txt")
         c.setterChampion.connect(lambda index, val: self.setchampionlabel(index, val))
-        c.settSpell.connect(lambda index, val: self.setspelllabel(index, val))
+        c.settSpell.connect(lambda index, val, id: self.setbuttondata(index, val, id))
         c.resetPos.connect(self.resetPos)
         c.move.connect(self.movable)
         c.styleactiveButton.connect(lambda index: self.styleactiveButton(index))
@@ -173,6 +180,7 @@ class SetterWindow(QDialog):
         c.updateColors.connect(self.updateColors)
         c.block.connect(lambda index: self.blockButton(index))
         c.toogleShow.connect(lambda: self.toogleShow())
+        c.updateTimers.connect(self.updateTimers)
         self.lastAction = time.time()
         self.show()
         try:
@@ -188,10 +196,27 @@ class SetterWindow(QDialog):
         self.hide()
         logging.debug('m1 setter window created')
         self.allwaysShow = False
+        self.cdtimer = QTimer()
+        self.cdtimer.timeout.connect(self.updateTimers)
+        self.cdtimer.setInterval(1000)
+        self.cdtimer.start()
 
+
+    def updateTimers(self):
+        for btn in self.spellButtons:
+            self.updateTimerButton(btn)
+        for btn in self.ultButtons:
+            self.updateTimerButton(btn)
+    def updateTimerButton(self, spellbutton):
+        if spellbutton.showflag:
+            print(spellbutton.showflag)
+            track = dataholder.getTrack(spellbutton.id)
+            if track is not None:
+                left = int(track.endTrack - gameTime.elapsed)
+                spellbutton.setText(str(left))
     def getButton(self, index):
         if index >= 10:
-            return self.ult[index - 10]
+            return self.ultButtons[index - 10]
         else:
             return self.spellButtons[index]
 
@@ -209,16 +234,14 @@ class SetterWindow(QDialog):
         spellbutton = self.getButton(index)
         spellbutton.setEnabled(True)
         if spellbutton.underMouse():
-            spellbutton.setText('X')
-            spellbutton.setStyleSheet(self.redStyle)
+            self.redButton(spellbutton)
         print('enabled', index)
 
     def eventFilter(self, spellbutton, event):
         if event.type() == QtCore.QEvent.HoverEnter:
             self.waitandSeeIfIdle()
             if spellbutton.isEnabled() and spellbutton.set:
-                spellbutton.setStyleSheet(self.redStyle)
-                spellbutton.setText('X')
+                self.redButton(spellbutton)
                 return True
         if event.type() == QtCore.QEvent.HoverLeave:
             self.waitandSeeIfIdle()
@@ -258,7 +281,7 @@ class SetterWindow(QDialog):
             btn.setStyleSheet(self.unSetStylelight)
         for btn in self.minButtons:
             btn.setStyleSheet(self.unSetStylelight)
-        for num, btn in enumerate(self.ult, start=0):
+        for num, btn in enumerate(self.ultButtons, start=0):
             btn.setStyleSheet(self.unSetStylelight)
             btn.set = False
             btn.justPressed = False
@@ -267,11 +290,15 @@ class SetterWindow(QDialog):
         for btn in self.spellButtons:
             self.brightButton(btn)
             btn.set = False
-        for btn in self.ult:
+        for btn in self.ultButtons:
             self.brightButton(btn)
             btn.set = False
-
+        tracks = {}
         with datalock:
+            tracks = dataholder.tracks
+        if len(tracks) == 0:
+            return
+        else:
             for id, track in dataholder.tracks.items():
                 if track.endTrack > gameTime.elapsed:
                     btnindex = dataholder.buttons.get(id)
@@ -287,40 +314,54 @@ class SetterWindow(QDialog):
         btn.set = True
         if btn.justPressed:
             if btn.underMouse():
-                btn.setText('X')
-                btn.setStyleSheet(self.redStyle)
+                self.redButton(btn)
                 return
         self.darkButton(btn)
         return
 
+    def redButton(self, spellbutton):
+        spellbutton.setText("X")
+        spellbutton.setStyleSheet(self.redStyle)
+        spellbutton.showflag = False
     def brightButton(self, spellbutton):
         spellbutton.setStyleSheet(spellbutton.brightStyle)
         spellbutton.setText(spellbutton.spellName)
+        spellbutton.showflag = False
     def darkButton(self, spellbutton):
         spellbutton.setStyleSheet(spellbutton.darkStyle)
         spellbutton.setText(spellbutton.spellName)
+        spellbutton.showflag = True
+        self.updateTimerButton(spellbutton)
     def brightStyle(self, iconName):
         path = os.path.join(appdatadir.jsondir, iconName + ".png")
         path = path.replace('\\', '/')
         #spellButton.setStyleSheet('border-image: url("'+path+'");')
         return 'border-image: url("' + path + '");'
     def darkStyle(self, iconName):
-        return self.brightStyle(iconName + 'darken')
+        return self.brightStyle(iconName + 'darken')+"color: rgb(230,230,230);"
 
     def setchampionlabel(self, index, val):
         self.championLabels[index].setText(val)
 
-    def setspelllabel(self, index, val):
+    def setbuttondata(self, index, val, id):
+        print('setbuttondata', index, val, id)
         logging.debug('     gc* setting spell label ' + str(index) + ' ' + str(val))
-        spellButton = self.spellButtons[index]
+        spellButton = self.getButton(index)
         spellButton.setText('')
-        spell = spellDatabase.get(val)
-        icon = spell.icon
-        spellButton.spellName = ''
-        spellButton.brightStyle = self.brightStyle(icon)
-        spellButton.darkStyle = self.darkStyle(icon)
-        #set icon
-        self.brightButton(spellButton)
+
+        if index >=10 :
+            spellButton.setText(val)
+            spellButton.spellName = val
+            spellButton.id = id
+        else:
+            spell = spellDatabase.get(val)
+            icon = spell.icon
+            spellButton.spellName = ''
+            spellButton.brightStyle = self.brightStyle(icon)
+            spellButton.darkStyle = self.darkStyle(icon)
+            spellButton.id = id
+            #set icon
+            self.brightButton(spellButton)
 
     def resetPos(self):
         centerPoint = QDesktopWidget().availableGeometry().center()
@@ -436,6 +477,8 @@ class SpellButton(QPushButton):
         self.darkStyle = "color: rgb(150,150,150); background-color: rgb(90,90,90)"
         self.set = False
         self.justPressed = False
+        self.id = 'empty'
+        self.showflag = False
 
 
 def blockButton(id):
@@ -454,6 +497,7 @@ def saveTrack(id, endTrack):
     showTrackEntrys()
     c.styleactiveButton.emit(int(buttonIndex))
     logging.debug('st10 save track success')
+    c.updateTimers.emit()
 
 
 def RemoveTrack(id):
@@ -463,6 +507,7 @@ def RemoveTrack(id):
         dataholder.removeTrack(track)
         showTrackEntrys()
     logging.debug('st8 remove track success')
+    c.updateTimers.emit()
 
 
 def modifyTrack(id, endTrack):
@@ -471,6 +516,7 @@ def modifyTrack(id, endTrack):
         track.updateEndTrack(float(endTrack))
         dataholder.addTrack(id, track)
         showTrackEntrys()
+        c.updateTimers.emit()
 
 
 class OverlayWindow(QDialog):
@@ -661,15 +707,21 @@ class Spell():
 
 def calculateCD(spell):
     gtcdr = dataholder.getgameTypeCdr()
-    cd = spell.cd
-    if spell.spellname == 'tp':
-        cd = tpCD(spell)
-    if gtcdr == spellDatabase.get("ARAM"):
-        cd = cd * (1.0 - (spell.runecdr / 100.0))
-        cdr = gtcdr + getItemCDR(spell)
-        return cd * (1.0 - ((gtcdr + getItemCDR(spell)) / 100.0))
+    if isinstance(spell, UltSpell):
+        lvl = str(dataholder.getLvL(spell.champion))
+        cd = spell.cddir.get(lvl)
+        print(cd)
+        return cd
     else:
-        return cd * (1.0 - ((getItemCDR(spell) + spell.runecdr) / 100.0))
+        cd = spell.cd
+        if spell.spellname == 'tp':
+            cd = tpCD(spell)
+        if gtcdr == spellDatabase.get("ARAM"):
+            cd = cd * (1.0 - (spell.runecdr / 100.0))
+            cdr = gtcdr + getItemCDR(spell)
+            return cd * (1.0 - ((gtcdr + getItemCDR(spell)) / 100.0))
+        else:
+            return cd * (1.0 - ((getItemCDR(spell) + spell.runecdr) / 100.0))
 
 class TrackEntry():
     def __init__(self, spell, modifier):
@@ -700,11 +752,11 @@ class SummonerSpell():
             self.mqttdesc) + '(0/1)')
 
 class UltSpell():
-    def __init__(self, cham, cd, mqttdesc,runecdr):
+    def __init__(self, cham, cddir, mqttdesc,runecdr):
         self.champion = cham
         self.runecdr = runecdr
         self.spellname = 'ult'
-        self.cd = cd
+        self.cddir = cddir
         self.mqttdesc = mqttdesc
 
 
@@ -766,6 +818,13 @@ class Dataholder():
             self.items = {}
             self.buttons = {}
             self.gtcdr = 0.0
+    def saveChampionIds(self, dict):
+        with datalock:
+            self.championIds = dict
+    def getChampionIds(self, name):
+        with datalock:
+            ret = self.championIds[name]
+        return ret
     def setgameTypeCdr(self,cdr):
         with datalock:
             self.gtcdr = cdr
@@ -943,20 +1002,25 @@ def loadWithApi():
                 if cdr is not None:
                     runecdr = runecdr + cdr
             logging.debug(' gc6_0 enemy ' + name + ' ' + champ + ' ' + sp1)
-
-            dataholder.addSpell(champ + 'Spell1', SummonerSpell(champ, sp1, index, runecdr))
-            dataholder.addButton(champ + 'Spell1', index)
+            id = champ + 'Spell1'
+            dataholder.addSpell(id, SummonerSpell(champ, sp1, index, runecdr))
+            dataholder.addButton(id, index)
             temp = c
-            c.settSpell.emit(index, sp1)
+            c.settSpell.emit(index, sp1, id)
             index = index + 1
 
+            id = champ + 'Spell2'
             logging.debug(' gc6_1 enemy ' + name + ' ' + champ + ' ' + sp2)
-            dataholder.addSpell(champ + 'Spell2', SummonerSpell(champ, sp2, index, runecdr))
-            dataholder.addButton(champ + 'Spell2', index)
-            c.settSpell.emit(index, sp2)
+            dataholder.addSpell(id, SummonerSpell(champ, sp2, index, runecdr))
+            dataholder.addButton(id , index)
+            c.settSpell.emit(index, sp2, id)
             index = index + 1
-            dataholder.addSpell(champ + 'Ult', UltSpell(champ, 110, ultindex, runecdr))
-            dataholder.addButton(champ + 'Ult', ultindex)
+            id = champ +'Ult' \
+                        ''
+            cdDir = loadUlt(champ)
+            dataholder.addSpell(id, UltSpell(champ, cdDir, ultindex, runecdr))
+            dataholder.addButton(id, ultindex)
+            c.settSpell.emit(ultindex, 'ult', id)
             # set sp1, sp2, champName in window (change setterWindow with list of champions and spells)
             c.setterChampion.emit(ultindex - 10, champ)
             ultindex = ultindex + 1
@@ -1184,7 +1248,7 @@ def saveCurrentLogDate(path):
 def tpCD(spell):
     lvl = dataholder.getLvL(spell.champion)
     ret = (lvl-1) * ((240-420)/17)+420
-    print('alive')
+
     return ret
 
 spellDatabase = {
@@ -1215,13 +1279,15 @@ spellDatabase = {
     'Inspiration': 5.0
 }
 def initCDragon():
-    if not readSummonerSpellsFromFile():
+    if not readSummonerSpellsFromFile() or not readChampionIdsFromFile():
         updateCDragon()
         readSummonerSpellsFromFile()
+        readChampionIdsFromFile()
 
 def updateCDragon():
     logging.debug('m? ucd0 updating game data with community dragon')
     updateSummonSpellJson()
+    updateChampionIds()
 from PIL import Image, ImageEnhance
 
 def updateSummonerIcon(name, iconPath):
@@ -1248,6 +1314,56 @@ def updateSummonerIcon(name, iconPath):
         print(e)
         return
 
+def loadUlt(chamName):
+    chamNum = dataholder.getChampionIds(chamName)
+    print(chamName, chamNum)
+    ret = loadUltFromFile(chamNum)
+    if ret == None:
+        updateUltJson(chamNum)
+        return loadUltFromFile(chamNum)
+    else:
+        return ret
+
+def loadUltFromFile(champNum):
+    filepath = os.path.join(appdatadir.jsondir, str(champNum)+".json")
+    try:
+        with open(filepath) as json_file:
+            data = json.load(json_file)
+            ret = data
+        return ret
+    except IOError:
+        return None
+
+def updateUltJson(champNum):
+    logging.debug('m? ucd1 updating summonerspell cd and icons')
+    try:
+        r = requests.get(
+            "http://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/champions/"+str(champNum)+".json",
+            verify=False)
+    except Exception as e:
+        logging.debug('m? ucdError ' + e)
+        return
+    j = json.loads(r.content)
+    spellList = j.get('spells')
+    ultspell = spellList[len(spellList)-1]
+    basecd = ultspell.get('cooldownCoefficients')
+    lvl6 = basecd[0]
+    lvl11 = basecd[1]
+    lvl16 = basecd[2]
+    leveldict = {}
+    for i in range(1,6):
+        leveldict[i] = 0
+    for i in range(6,11):
+        leveldict[i] = lvl6
+    for i in range(11,16):
+        leveldict[i] = lvl11
+    for i in range(16,19):
+        leveldict[i] = lvl16
+
+    filepath = os.path.join(appdatadir.jsondir, str(champNum)+".json")
+    with open(filepath, 'w') as outfile:
+        json.dump(leveldict, outfile)
+
 def updateSummonSpellJson():
     logging.debug('m? ucd1 updating summonerspell cd and icons')
     try:
@@ -1266,21 +1382,44 @@ def updateSummonSpellJson():
     except FileExistsError:
         pass
     filepath = os.path.join(appdatadir.jsondir, "summoner-spells.json")
-    print(filepath)
     with open(filepath, 'w') as outfile:
         json.dump(j, outfile)
     logging.debug('m? ucd2 updating summonerspell cd and icons success')
+
+def updateChampionIds():
+    try:
+        r = requests.get("http://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/champion-summary.json", verify=False)
+    except Exception as e:
+        return
+    j = json.loads(r.content)
+    dict = {}
+    for champion in j:
+        #find spell image and save it
+        name = champion.get('name')
+        id = champion.get('id')
+        dict[name] = id
+    filepath = os.path.join(appdatadir.jsondir, "championId.json")
+    with open(filepath, 'w') as outfile:
+        json.dump(dict, outfile)
+
+def readChampionIdsFromFile():
+    filepath = os.path.join(appdatadir.jsondir, "championId.json")
+    try:
+        with open(filepath) as json_file:
+            data = json.load(json_file)
+            dataholder.saveChampionIds(data)
+        return True
+    except IOError:
+        return False
 
 def readSummonerSpellsFromFile():
     filepath = os.path.join(appdatadir.jsondir, "summoner-spells.json")
     try:
         with open(filepath) as json_file:
             data = json.load(json_file)
-            print(data)
             for spell in data:
                 name = spell.get('name')
                 cd = spell.get('cooldown')
-                print(name, cd)
                 spell = spellDatabase.get(name)
                 if spell is None:
                     spell = Spell(name,cd,name)
@@ -1290,7 +1429,6 @@ def readSummonerSpellsFromFile():
     except IOError:
         return False
 
-"http://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/perks.json"
 def ultcd(champId):
     try:
         r = requests.get("https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/champions/101.json", verify=False)
@@ -1298,8 +1436,22 @@ def ultcd(champId):
         print(e)
         return
     j = json.loads(r.content)
-    print(j)
 
+def updateItems():
+    try:
+        r = requests.get("http://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/items.json", verify=False)
+    except Exception as e:
+        return
+    j = json.loads(r.content)
+    dict = {}
+    for champion in j:
+        #find spell image and save it
+        name = champion.get('name')
+        id = champion.get('id')
+        dict[name] = id
+    filepath = os.path.join(appdatadir.jsondir, "championId.json")
+    with open(filepath, 'w') as outfile:
+        json.dump(dict, outfile)
 
 if __name__ == '__main__':
     import logging
@@ -1310,7 +1462,6 @@ if __name__ == '__main__':
         pass
     debugpath = os.path.join(appdatadir.overlaydir, "debug.log")
     logStartPath = os.path.join(appdatadir.overlaydir, "startLogdate.txt")
-    print(debugpath)
     try:
         with open(logStartPath) as f:
             logStartDate = f.read()
@@ -1343,6 +1494,7 @@ if __name__ == '__main__':
         ]
     )
 
+    updateChampionIds()
     initCDragon()
 
     logging.debug('m0 overlay started! (0/4 startup, 0/5 entire run)')
