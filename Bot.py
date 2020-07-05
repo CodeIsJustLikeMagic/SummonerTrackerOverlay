@@ -212,7 +212,8 @@ class SetterWindow(QDialog):
             track = dataholder.getTrack(spellbutton.id)
             if track is not None:
                 left = int(track.endTrack - gameTime.elapsed)
-                if left <= 0:
+                if left < 0:
+                    print('settext ""')
                     spellbutton.setText("")
                 else:
                     spellbutton.setText(str(left))
@@ -252,13 +253,15 @@ class SetterWindow(QDialog):
                 if spellbutton.spellName != 'ult':
                     cd = int(cd)
                 spellbutton.setText(str(cd))
+                print(spellbutton.brighterStyle)
+                spellbutton.setStyleSheet(spellbutton.brighterStyle)
                 print('show')
         if event.type() == QtCore.QEvent.HoverLeave:
             self.waitandSeeIfIdle()
             if spellbutton.set:
                 self.darkButton(spellbutton)
             else:
-                spellbutton.setText(spellbutton.spellName)
+                self.brightButton(spellbutton)
             return True
         return False
 
@@ -318,8 +321,9 @@ class SetterWindow(QDialog):
 
     def unsetColorButton(self, index):
         btn = self.getButton(index)
-        self.brightButton(btn)
-        btn.set = False
+        if btn.set:
+            self.brightButton(btn)
+            btn.set = False
 
     def styleactiveButton(self, index):
         btn = self.getButton(index)
@@ -337,6 +341,7 @@ class SetterWindow(QDialog):
         spellbutton.showflag = False
     def brightButton(self, spellbutton):
         spellbutton.setStyleSheet(spellbutton.brightStyle)
+        print('setbrightbutton')
         spellbutton.setText(spellbutton.spellName)
         spellbutton.showflag = False
     def darkButton(self, spellbutton):
@@ -348,10 +353,14 @@ class SetterWindow(QDialog):
         path = os.path.join(appdatadir.jsondir, iconName + ".png")
         path = path.replace('\\', '/')
         #spellButton.setStyleSheet('border-image: url("'+path+'");')
-        return 'border-image: url("' + path + '"); color:rgb(240,240,240); text-shadow: -1px 0 black, 0 1px black, 1px 0 black, 0 -1px black;'
+        return 'border-image: url("' + path + '"); color:rgb(240,240,240);'
     def darkStyle(self, iconName):
         return self.brightStyle(iconName + 'darken')+"color: rgb(230,230,230);"
-
+    def brighterStyle(self, iconName):
+        path = os.path.join(appdatadir.jsondir, iconName + "brighten.png")
+        path = path.replace('\\', '/')
+        # spellButton.setStyleSheet('border-image: url("'+path+'");')
+        return 'border-image: url("' + path + '"); color:rgb(0,0,0);'
     def setchampionlabel(self, index, val):
         self.championLabels[index].setText(val)
 
@@ -371,6 +380,7 @@ class SetterWindow(QDialog):
             spellButton.spellName = ''
             spellButton.brightStyle = self.brightStyle(icon)
             spellButton.darkStyle = self.darkStyle(icon)
+            spellButton.brighterStyle = self.brighterStyle(icon)
             spellButton.id = id
             #set icon
             self.brightButton(spellButton)
@@ -487,6 +497,7 @@ class SpellButton(QPushButton):
         self.spellName = text
         self.brightStyle = "color: rgb(230,230,230); background-color: rgb(150,150,150)"
         self.darkStyle = "color: rgb(230,230,230); background-color: rgb(90,90,90)"
+        self.brighterStyle = "color: rgb(230,230,230); background-color: rgb(150,150,150)"
         self.set = False
         self.justPressed = False
         self.id = 'empty'
@@ -1350,8 +1361,17 @@ def updateSummonerIcon(name, iconPath):
         factor = 0.5  # darkens the image
         enhancer = ImageEnhance.Brightness(im1)
         im2 = enhancer.enhance(factor)
-        ImageEnhance.Contrast()
         im2.save(darken)
+
+        col = ImageEnhance.Color(im2)
+        im2 = col.enhance(0.5)
+
+        c = ImageEnhance.Contrast(im2)
+        im3 = c.enhance(0.2)
+        enhancer = ImageEnhance.Brightness(im3)
+        im3 = enhancer.enhance(5)
+
+        im3.save(brighten)
     except Exception as e:
         return
 
@@ -1549,6 +1569,7 @@ if __name__ == '__main__':
             logging.StreamHandler()
         ]
     )
+    updateSummonSpellJson()
     initCDragon()
 
     logging.debug('m0 overlay started! (0/4 startup, 0/5 entire run)')
