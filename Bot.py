@@ -35,6 +35,7 @@ class Communicate(QObject):
     block = pyqtSignal(int)
     toogleShow = pyqtSignal()
     updateTimers = pyqtSignal()
+    helloInfo = pyqtSignal()
 
 
 c = Communicate()
@@ -295,6 +296,9 @@ class SetterWindow(QDialog):
             btn.set = False
             btn.justPressed = False
             btn.setStyleSheet(self.unSetStylelight)
+            btn.brighterStyle = self.unSetStylelight
+            btn.brightStyle = self.unSetStylelight
+            btn.darkStyle = self.setStyledark
         for btn in self.minButtons:
             btn.setStyleSheet(self.unSetStylelight)
         for num, btn in enumerate(self.ultButtons, start=0):
@@ -543,7 +547,7 @@ def modifyTrack(id, endTrack):
         c.updateTimers.emit()
 
 
-class OverlayWindow(QDialog):
+class InformationWindow(QDialog):
 
     def __init__(self):
         super().__init__()
@@ -593,9 +597,11 @@ class OverlayWindow(QDialog):
         trayIcon = QSystemTrayIcon(icon, self)
         self.setWindowIcon(icon)
         menu = QMenu()
+        cdragon = menu.addAction("Reload Spell and Item Data")
+        cdragon.triggered.connect(updateCDragon)
         openHotKeyFileAction = menu.addAction("Set Hotkey")
         global hotkeyFilePath
-        openHotKeyFileAction.triggered.connect(lambda: os.startfile(hotkeyFilePath))
+        openHotKeyFileAction.triggered.connect(self.setHotkey)
         moveAction = menu.addAction("Toggle moveable")
         moveAction.triggered.connect(self.toggleMovable)
         resetPosAction = menu.addAction("Reset Position")
@@ -606,12 +612,11 @@ class OverlayWindow(QDialog):
         showmqttInfoAction.triggered.connect(self.showMQTTInfo)
         newConnection = menu.addAction('Reload CurrentGame')
         newConnection.triggered.connect(mqttclient.renonnectmqtt)
-        cdragon = menu.addAction("Reload Spell and Item Data")
-        cdragon.triggered.connect(updateCDragon)
         exitAction = menu.addAction("Exit")
         exitAction.triggered.connect(self.close)
         # self.aboutToQuit(disconnectmqtt())
         c.unmovable.connect(self.unmovable)
+        c.helloInfo.connect(self.showHelloInfo)
 
         self.postxtfilepath = os.path.join(appdatadir.overlaydir, "pos.txt")
 
@@ -637,10 +642,17 @@ class OverlayWindow(QDialog):
 
         logging.debug('m2 overlay window created')
 
+    def showHelloInfo(self):
+        c.status.emit(mqttclient.helloInfo)
+        self.timer.start(10000)
     def showMQTTInfo(self):
         c.status.emit(mqttclient.connectionInfo)
 
         self.timer.start(10000)
+    def setHotkey(self):
+        os.startfile(hotkeyFilePath)
+        QTimer.singleShot(10000, loadHotkey)
+
 
     def clearStatus(self):
         c.status.emit('')
@@ -1005,7 +1017,7 @@ def loadLevelsAndItems():
     try:
         r = requests.get("https://127.0.0.1:2999/liveclientdata/playerlist", verify=False)
     except Exception as e:
-        return
+        logging.debug(str(e))
     j = json.loads(r.content)
     for player in j:
         if player.get("team", "") != myteam:
@@ -1135,7 +1147,14 @@ class Mqttclient():
         # print(clientID,topic)
         client.connect(broker_address)
         self.connectionInfo = 'connected\n' + 'topic ' + self.topic + '\nclient id ' + self.clientID
-        c.showmqtt.emit()
+        keys = '^'
+        try:
+            with open(hotkeyFilePath, encoding = "utf-8") as f:
+                keys = (f.read())
+        except FileNotFoundError:
+            pass
+        self.helloInfo = 'connected to game\npress hotkey '+keys+' to start Timers'
+        c.helloInfo.emit()
         client.subscribe(self.topic)
         client.loop_start()
         self.clientHolder = client
@@ -1155,6 +1174,7 @@ class Mqttclient():
         self.disconnectmqtt()
         topicsuffix, clientIdSuffix = loadWithApi()
         self.connect(topicsuffix, clientIdSuffix)
+        loadHotkey()
         # reset the colors of buttons
         c.updateColors.emit()
 
@@ -1278,17 +1298,25 @@ hotkeyFilePath = ''
 
 
 def loadHotkey():
+    logging.debug('loading hotkey')
     global hotkeyFilePath
     hotkeyFilePath = os.path.join(appdatadir.overlaydir, "hotkey.txt")
     keys = '^'
 
     try:
-        with open(hotkeyFilePath) as f:
+        with open(hotkeyFilePath, encoding = "utf-8") as f:
             keys = f.read()
-    except FileNotFoundError:
-        f = open(hotkeyFilePath, "w")
-        f.write(keys)
-        f.close()
+            keys = keys.rstrip()
+            keys = keys.replace(' ','')
+    except FileNotFoundError :
+        pass
+    f = open(hotkeyFilePath, "w")
+    f.write(keys)
+    f.close()
+    try:
+        keyboard.clear_all_hotkeys()
+    except Exception as e:
+        print(e)
     keyboard.add_hotkey(keys, reactToHotKey)
 
 
@@ -1600,6 +1628,6 @@ if __name__ == '__main__':
     logging.debug('m0 overlay started! (0/4 startup, 0/5 entire run)')
     app = QApplication([])
     setterWindow = SetterWindow()
-    window = OverlayWindow()
+    window = InformationWindow()
     startThreads()
     app.exec_()
