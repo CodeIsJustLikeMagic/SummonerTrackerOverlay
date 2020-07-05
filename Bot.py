@@ -754,7 +754,8 @@ def calculateCD(spellObject):
 
         if cdr >= 40:
             cdr = 40
-        cdr = cdr + spellObject.runecdr
+        cdr = cdr + dataholder.getclouddrakes()
+        cdr = cdr + spellObject.cosmicInsight
         cd = cd * (1- (cdr/100.0))
         logging.debug('st? calculate ultspell cd '+str(cd))
         return cd
@@ -763,11 +764,11 @@ def calculateCD(spellObject):
         if spellObject.spellname == 'tp':
             cd = tpCD(spellObject)
         if gtcdr == spellDatabase.get("ARAM"):
-            cd = cd * (1.0 - (spellObject.runecdr / 100.0))
+            cd = cd * (1.0 - (spellObject.cosmicInsight / 100.0))
             cdr = gtcdr + getItemScdr(spellObject)
             cd = cd * (1.0 - ((gtcdr + getItemScdr(spellObject)) / 100.0))
         else:
-            cd = cd * (1.0 - ((getItemScdr(spellObject) + spellObject.runecdr) / 100.0))
+            cd = cd * (1.0 - ((getItemScdr(spellObject) + spellObject.cosmicInsight) / 100.0))
         logging.debug('st? calculate summonerspell cd ' + str(cd))
         return cd
 
@@ -788,9 +789,9 @@ class TrackEntry():
         self.desc = self.spell.champion + ' ' + self.spell.spellname + ' ' + self.endTrackMins
 
 class SummonerSpell():
-    def __init__(self, cham, spellname, mqttdesc, runecdr):
+    def __init__(self, cham, spellname, mqttdesc, cosmicInsight):
         self.champion = cham
-        self.runecdr = runecdr
+        self.cosmicInsight = cosmicInsight
         if spellDatabase.get(spellname) is None:
             logging.debug('     gc6 ssError spell ' + spellname + ' doesnt exist in database')
         self.spellname = spellDatabase.get(spellname).shortName
@@ -835,9 +836,12 @@ def timeAndShow():
         gameTime.advanceGameTime()
         showTrackEntrys()
     else:
+        #disconnect from game
         dataholder.clear()
         c.text.emit('')
         c.unsetAll.emit()
+        global eventnum
+        eventnum = -1
 
 
 def showTrackEntrys():
@@ -866,6 +870,8 @@ class Dataholder():
             self.championitems = {}
             self.buttons = {}
             self.gtcdr = 0.0
+            self.coulddrake = 0.0
+            self.enemies = {}
     def saveItems(self, dict):
         with datalock:
             self.allitems = dict
@@ -896,7 +902,22 @@ class Dataholder():
             self.buttons = {}
             self.championitems = {}
             self.gtcdr = 0.0
-
+            self.coulddrake = 0.0
+            self.enemies = {}
+    def getclouddrakes(self):
+        with datalock:
+            ret = self.coulddrake
+        return ret
+    def addEnemy(self, champ):
+        with datalock:
+            self.enemies[champ] = True
+    def isEnemy(self, champ):
+        with datalock:
+            ret = self.enemies.get(champ)
+        return ret
+    def setcoulddrakes(self,cdr):
+        with datalock:
+            self.coulddrake = cdr
     def setItems(self, champion, j):
         with datalock:
             self.championitems[champion] = j
@@ -1012,21 +1033,40 @@ def getItemUcdr(ultspell):
 
     return ucdr
 
+eventnum = -1
 def loadLevelsAndItems():
+    global eventnum
     logging.debug('gc* ll0 attempting to load levels (0/1)')
     try:
-        r = requests.get("https://127.0.0.1:2999/liveclientdata/playerlist", verify=False)
+        r = requests.get("https://127.0.0.1:2999/liveclientdata/allgamedata", verify=False)
     except Exception as e:
         logging.debug(str(e))
     j = json.loads(r.content)
-    for player in j:
+    players = j.get("allPlayers")
+    for player in players:
         if player.get("team", "") != myteam:
             champ = player.get("championName", "")
             lvl = player.get("level", "")
             dataholder.setLvl(champ, lvl)
             items = player.get("items")
             dataholder.setItems(champ, items)
-
+    events = j.get('events').get('Events')
+    for event in events:
+        eventId = event.get("EventID")
+        if eventId > eventnum: #not proecessed yet.
+            eventnum = eventId
+            if event.get("EventName") == "DragonKill": # check for air drake kill
+                if event.get("DragonType") == "Air":
+                    #check if killer is enemy
+                    killer = event.get("KillerName")
+                    print('new could drake killed')
+                    if dataholder.isEnemy(killer) is not None:
+                        old = dataholder.getclouddrakes()
+                        print('new cloud drake killed by enemy')
+                        new = old + 10
+                        if new > 40:
+                            new = 40
+                        dataholder.setcoulddrakes(new)
     logging.debug('gc*  ll1 loadlevel success')
 
 
@@ -1066,6 +1106,7 @@ def loadWithApi():
         if player.get("team", "") != myteam:
             name = player.get("summonerName", "")
             champ = player.get("championName", "")
+            dataholder.addEnemy(champ)
             sp1 = player.get("summonerSpells").get("summonerSpellOne").get("displayName")
             sp2 = player.get("summonerSpells").get("summonerSpellTwo").get("displayName")
 
