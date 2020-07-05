@@ -1,6 +1,7 @@
 # Bot.py
 from datetime import datetime
 
+from PIL.ImageDraw import ImageDraw
 from PyQt5 import QtCore
 from PyQt5.QtGui import QFont, QIcon, QColor
 from PyQt5.QtWidgets import QApplication, QLabel, QDialog, QVBoxLayout, QSystemTrayIcon, QMenu, QDesktopWidget, \
@@ -1339,7 +1340,7 @@ def updateCDragon():
     updateSummonSpellJson()
     updateChampionIds()
     updateItems()
-from PIL import Image, ImageEnhance
+from PIL import Image, ImageEnhance, ImageDraw
 
 def updateSummonerIcon(name, iconPath):
     if len(name) == 0:
@@ -1363,15 +1364,10 @@ def updateSummonerIcon(name, iconPath):
         im2 = enhancer.enhance(factor)
         im2.save(darken)
 
-        col = ImageEnhance.Color(im2)
-        im2 = col.enhance(0.5)
+        draw =  ImageDraw.Draw(im1)
+        draw.rectangle((5,15,61,45), fill=(230,230,230))
 
-        c = ImageEnhance.Contrast(im2)
-        im3 = c.enhance(0.2)
-        enhancer = ImageEnhance.Brightness(im3)
-        im3 = enhancer.enhance(5)
-
-        im3.save(brighten)
+        im1.save(brighten)
     except Exception as e:
         return
 
