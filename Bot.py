@@ -250,7 +250,7 @@ class SetterWindow(QDialog):
             if not spellbutton.set:
                 id = (spellbutton.id)
                 spell = dataholder.getSpell(id)
-                cd = calculateCD(spell)
+                cd = float("{:.2f}".format(calculateCD(spell)))
                 if spellbutton.spellName != 'ult':
                     cd = int(cd)
                 spellbutton.setText(str(cd))
@@ -751,7 +751,6 @@ def calculateCD(spellObject):
         if gtcdr == spellDatabase.get("ARAM"):
             cd = cd * (1.0 - (spellObject.runecdr / 100.0))
             cdr = gtcdr + getItemScdr(spellObject)
-            return
             cd = cd * (1.0 - ((gtcdr + getItemScdr(spellObject)) / 100.0))
         else:
             cd = cd * (1.0 - ((getItemScdr(spellObject) + spellObject.runecdr) / 100.0))
@@ -973,11 +972,30 @@ def getItemScdr(summonerspell):
 def getItemUcdr(ultspell):
     items = dataholder.getItem(ultspell.champion)
     ucdr = 0.0
+    #basecdr
+    s = []
     for item in items:
         id = item.get('itemID')
         cd = dataholder.getItemCD(id)
         if cd is not None:
+            s.append(id)
+            cd = cd.get('base')
+            if cd is not None:
+                ucdr = ucdr + cd
+    #qunique
+    itemset = set(s)
+    for id in itemset:
+        cd = dataholder.getItemCD(id)
+        cd = cd.get('unique')
+        if cd is not None:
             ucdr = ucdr + cd
+    for id in itemset:
+        cd = dataholder.getItemCD(id)
+        cd = cd.get('haste')
+        if cd is not None:
+            ucdr = ucdr + cd
+            break
+
     return ucdr
 
 def loadLevelsAndItems():
@@ -1500,17 +1518,27 @@ def updateItems():
     j = json.loads(r.content)
     p = re.compile('([0-9]*)% Cooldown Reduction')
     dict = {}
+    i = {}
     for item in j:
         itemid = item.get('id')
         for c in item.get('categories'):
             if c == 'CooldownReduction':
                 desc = item.get('description')
-                cdlist = p.findall(desc)
-                if len(cdlist) > 0:
-                    cd = 0
-                    for c in cdlist:
-                        cd = cd + int(c)
-                    dict[itemid] = cd
+                l = re.split('UNIQUE', desc, maxsplit=1)
+                i = {}
+                for desc in l:
+                    cdlist = p.findall(desc)
+                    if len(cdlist) > 0:
+                        cd = 0
+                        for c in cdlist:
+                            cd = cd + int(c)
+                        if re.search('Haste', desc) is not None:
+                            i['haste'] = cd
+                        elif re.search('UNIQUE', desc) is not None:
+                            i['unique'] = cd
+                        else:
+                            i['base'] = cd
+                dict[itemid] = i
     filepath = os.path.join(appdatadir.jsondir, "items.json")
     with open(filepath, 'w') as outfile:
         json.dump(dict, outfile)
@@ -1565,7 +1593,7 @@ if __name__ == '__main__':
             logging.StreamHandler()
         ]
     )
-    updateSummonSpellJson()
+    updateItems()
     initCDragon()
 
     logging.debug('m0 overlay started! (0/4 startup, 0/5 entire run)')
