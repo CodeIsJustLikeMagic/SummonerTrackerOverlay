@@ -604,8 +604,10 @@ class OverlayWindow(QDialog):
         toggleSetterAction.triggered.connect(lambda: c.toogleShow.emit())
         showmqttInfoAction = menu.addAction("Show mqtt info")
         showmqttInfoAction.triggered.connect(self.showMQTTInfo)
-        newConnection = menu.addAction('Reload')
+        newConnection = menu.addAction('Reload CurrentGame')
         newConnection.triggered.connect(mqttclient.renonnectmqtt)
+        cdragon = menu.addAction("Reload Spell and Item Data")
+        cdragon.triggered.connect(updateCDragon)
         exitAction = menu.addAction("Exit")
         exitAction.triggered.connect(self.close)
         # self.aboutToQuit(disconnectmqtt())
@@ -1451,10 +1453,6 @@ def updateSummonSpellJson():
         name = spell.get('name')
         iconPath = spell.get('iconPath')
         updateSummonerIcon(name,iconPath)
-    try:
-        os.mkdir(appdatadir.jsondir)
-    except FileExistsError:
-        pass
     filepath = os.path.join(appdatadir.jsondir, "summoner-spells.json")
     with open(filepath, 'w') as outfile:
         json.dump(j, outfile)
@@ -1560,6 +1558,10 @@ if __name__ == '__main__':
         os.mkdir(appdatadir.overlaydir)
     except FileExistsError:
         pass
+    try:
+        os.mkdir(appdatadir.jsondir)
+    except FileExistsError:
+        pass
     debugpath = os.path.join(appdatadir.overlaydir, "debug.log")
     logStartPath = os.path.join(appdatadir.overlaydir, "startLogdate.txt")
     try:
@@ -1593,7 +1595,6 @@ if __name__ == '__main__':
             logging.StreamHandler()
         ]
     )
-    updateItems()
     initCDragon()
 
     logging.debug('m0 overlay started! (0/4 startup, 0/5 entire run)')
