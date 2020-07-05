@@ -212,7 +212,7 @@
       <workItem from="1593634061447" duration="14575000" />
       <workItem from="1593714645308" duration="21392000" />
       <workItem from="1593786525616" duration="18379000" />
-      <workItem from="1593867590337" duration="12687000" />
+      <workItem from="1593867590337" duration="32323000" />
     </task>
     <servers />
   </component>
@@ -250,58 +250,58 @@
       <screen x="1920" y="337" width="1920" height="1040" />
     </state>
     <state x="2660" y="614" key="FileChooserDialogImpl/0.0.1920.1040/1920.337.1920.1040@1920.337.1920.1040" timestamp="1593190384566" />
-    <state width="1877" height="289" key="GridCell.Tab.0.bottom" timestamp="1593888151814">
-      <screen x="1920" y="337" width="1920" height="1040" />
+    <state width="1877" height="434" key="GridCell.Tab.0.bottom" timestamp="1593911268609">
+      <screen x="0" y="0" width="1920" height="1040" />
     </state>
     <state width="1877" height="345" key="GridCell.Tab.0.bottom/0.0.1920.1040/1920.337.1858.1080@0.0.1920.1040" timestamp="1590343102551" />
     <state width="1351" height="151" key="GridCell.Tab.0.bottom/0.0.1920.1040/1920.337.1858.1080@1920.337.1858.1080" timestamp="1590285892502" />
-    <state width="1877" height="328" key="GridCell.Tab.0.bottom/0.0.1920.1040/1920.337.1920.1040@0.0.1920.1040" timestamp="1593887184234" />
-    <state width="1877" height="289" key="GridCell.Tab.0.bottom/0.0.1920.1040/1920.337.1920.1040@1920.337.1920.1040" timestamp="1593888151814" />
-    <state width="1877" height="289" key="GridCell.Tab.0.center" timestamp="1593888151814">
-      <screen x="1920" y="337" width="1920" height="1040" />
+    <state width="1877" height="434" key="GridCell.Tab.0.bottom/0.0.1920.1040/1920.337.1920.1040@0.0.1920.1040" timestamp="1593911268609" />
+    <state width="1440" height="333" key="GridCell.Tab.0.bottom/0.0.1920.1040/1920.337.1920.1040@1920.337.1920.1040" timestamp="1593904464719" />
+    <state width="1877" height="434" key="GridCell.Tab.0.center" timestamp="1593911268609">
+      <screen x="0" y="0" width="1920" height="1040" />
     </state>
     <state width="1877" height="345" key="GridCell.Tab.0.center/0.0.1920.1040/1920.337.1858.1080@0.0.1920.1040" timestamp="1590343102551" />
     <state width="1351" height="151" key="GridCell.Tab.0.center/0.0.1920.1040/1920.337.1858.1080@1920.337.1858.1080" timestamp="1590285892501" />
-    <state width="1877" height="328" key="GridCell.Tab.0.center/0.0.1920.1040/1920.337.1920.1040@0.0.1920.1040" timestamp="1593887184234" />
-    <state width="1877" height="289" key="GridCell.Tab.0.center/0.0.1920.1040/1920.337.1920.1040@1920.337.1920.1040" timestamp="1593888151814" />
-    <state width="1877" height="289" key="GridCell.Tab.0.left" timestamp="1593888151814">
-      <screen x="1920" y="337" width="1920" height="1040" />
+    <state width="1877" height="434" key="GridCell.Tab.0.center/0.0.1920.1040/1920.337.1920.1040@0.0.1920.1040" timestamp="1593911268609" />
+    <state width="1440" height="333" key="GridCell.Tab.0.center/0.0.1920.1040/1920.337.1920.1040@1920.337.1920.1040" timestamp="1593904464719" />
+    <state width="1877" height="434" key="GridCell.Tab.0.left" timestamp="1593911268609">
+      <screen x="0" y="0" width="1920" height="1040" />
     </state>
     <state width="1877" height="345" key="GridCell.Tab.0.left/0.0.1920.1040/1920.337.1858.1080@0.0.1920.1040" timestamp="1590343102551" />
     <state width="1351" height="151" key="GridCell.Tab.0.left/0.0.1920.1040/1920.337.1858.1080@1920.337.1858.1080" timestamp="1590285892501" />
-    <state width="1877" height="328" key="GridCell.Tab.0.left/0.0.1920.1040/1920.337.1920.1040@0.0.1920.1040" timestamp="1593887184234" />
-    <state width="1877" height="289" key="GridCell.Tab.0.left/0.0.1920.1040/1920.337.1920.1040@1920.337.1920.1040" timestamp="1593888151814" />
-    <state width="1877" height="289" key="GridCell.Tab.0.right" timestamp="1593888151814">
-      <screen x="1920" y="337" width="1920" height="1040" />
+    <state width="1877" height="434" key="GridCell.Tab.0.left/0.0.1920.1040/1920.337.1920.1040@0.0.1920.1040" timestamp="1593911268609" />
+    <state width="1440" height="333" key="GridCell.Tab.0.left/0.0.1920.1040/1920.337.1920.1040@1920.337.1920.1040" timestamp="1593904464719" />
+    <state width="1877" height="434" key="GridCell.Tab.0.right" timestamp="1593911268609">
+      <screen x="0" y="0" width="1920" height="1040" />
     </state>
     <state width="1877" height="345" key="GridCell.Tab.0.right/0.0.1920.1040/1920.337.1858.1080@0.0.1920.1040" timestamp="1590343102551" />
     <state width="1351" height="151" key="GridCell.Tab.0.right/0.0.1920.1040/1920.337.1858.1080@1920.337.1858.1080" timestamp="1590285892502" />
-    <state width="1877" height="328" key="GridCell.Tab.0.right/0.0.1920.1040/1920.337.1920.1040@0.0.1920.1040" timestamp="1593887184234" />
-    <state width="1877" height="289" key="GridCell.Tab.0.right/0.0.1920.1040/1920.337.1920.1040@1920.337.1920.1040" timestamp="1593888151814" />
-    <state width="1877" height="289" key="GridCell.Tab.1.bottom" timestamp="1593888151814">
-      <screen x="1920" y="337" width="1920" height="1040" />
+    <state width="1877" height="434" key="GridCell.Tab.0.right/0.0.1920.1040/1920.337.1920.1040@0.0.1920.1040" timestamp="1593911268609" />
+    <state width="1440" height="333" key="GridCell.Tab.0.right/0.0.1920.1040/1920.337.1920.1040@1920.337.1920.1040" timestamp="1593904464719" />
+    <state width="1877" height="333" key="GridCell.Tab.1.bottom" timestamp="1593911122241">
+      <screen x="0" y="0" width="1920" height="1040" />
     </state>
     <state width="1877" height="345" key="GridCell.Tab.1.bottom/0.0.1920.1040/1920.337.1858.1080@0.0.1920.1040" timestamp="1590343107700" />
-    <state width="1877" height="289" key="GridCell.Tab.1.bottom/0.0.1920.1040/1920.337.1920.1040@0.0.1920.1040" timestamp="1593886961482" />
-    <state width="1877" height="289" key="GridCell.Tab.1.bottom/0.0.1920.1040/1920.337.1920.1040@1920.337.1920.1040" timestamp="1593888151814" />
-    <state width="1877" height="289" key="GridCell.Tab.1.center" timestamp="1593888151814">
-      <screen x="1920" y="337" width="1920" height="1040" />
+    <state width="1877" height="333" key="GridCell.Tab.1.bottom/0.0.1920.1040/1920.337.1920.1040@0.0.1920.1040" timestamp="1593911122241" />
+    <state width="1440" height="333" key="GridCell.Tab.1.bottom/0.0.1920.1040/1920.337.1920.1040@1920.337.1920.1040" timestamp="1593904471380" />
+    <state width="1877" height="333" key="GridCell.Tab.1.center" timestamp="1593911122241">
+      <screen x="0" y="0" width="1920" height="1040" />
     </state>
     <state width="1877" height="345" key="GridCell.Tab.1.center/0.0.1920.1040/1920.337.1858.1080@0.0.1920.1040" timestamp="1590343107698" />
-    <state width="1877" height="289" key="GridCell.Tab.1.center/0.0.1920.1040/1920.337.1920.1040@0.0.1920.1040" timestamp="1593886961481" />
-    <state width="1877" height="289" key="GridCell.Tab.1.center/0.0.1920.1040/1920.337.1920.1040@1920.337.1920.1040" timestamp="1593888151814" />
-    <state width="1877" height="289" key="GridCell.Tab.1.left" timestamp="1593888151814">
-      <screen x="1920" y="337" width="1920" height="1040" />
+    <state width="1877" height="333" key="GridCell.Tab.1.center/0.0.1920.1040/1920.337.1920.1040@0.0.1920.1040" timestamp="1593911122241" />
+    <state width="1440" height="333" key="GridCell.Tab.1.center/0.0.1920.1040/1920.337.1920.1040@1920.337.1920.1040" timestamp="1593904471379" />
+    <state width="1877" height="333" key="GridCell.Tab.1.left" timestamp="1593911122241">
+      <screen x="0" y="0" width="1920" height="1040" />
     </state>
     <state width="1877" height="345" key="GridCell.Tab.1.left/0.0.1920.1040/1920.337.1858.1080@0.0.1920.1040" timestamp="1590343107697" />
-    <state width="1877" height="289" key="GridCell.Tab.1.left/0.0.1920.1040/1920.337.1920.1040@0.0.1920.1040" timestamp="1593886961481" />
-    <state width="1877" height="289" key="GridCell.Tab.1.left/0.0.1920.1040/1920.337.1920.1040@1920.337.1920.1040" timestamp="1593888151814" />
-    <state width="1877" height="289" key="GridCell.Tab.1.right" timestamp="1593888151814">
-      <screen x="1920" y="337" width="1920" height="1040" />
+    <state width="1877" height="333" key="GridCell.Tab.1.left/0.0.1920.1040/1920.337.1920.1040@0.0.1920.1040" timestamp="1593911122241" />
+    <state width="1440" height="333" key="GridCell.Tab.1.left/0.0.1920.1040/1920.337.1920.1040@1920.337.1920.1040" timestamp="1593904471379" />
+    <state width="1877" height="333" key="GridCell.Tab.1.right" timestamp="1593911122241">
+      <screen x="0" y="0" width="1920" height="1040" />
     </state>
     <state width="1877" height="345" key="GridCell.Tab.1.right/0.0.1920.1040/1920.337.1858.1080@0.0.1920.1040" timestamp="1590343107699" />
-    <state width="1877" height="289" key="GridCell.Tab.1.right/0.0.1920.1040/1920.337.1920.1040@0.0.1920.1040" timestamp="1593886961482" />
-    <state width="1877" height="289" key="GridCell.Tab.1.right/0.0.1920.1040/1920.337.1920.1040@1920.337.1920.1040" timestamp="1593888151814" />
+    <state width="1877" height="333" key="GridCell.Tab.1.right/0.0.1920.1040/1920.337.1920.1040@0.0.1920.1040" timestamp="1593911122241" />
+    <state width="1440" height="333" key="GridCell.Tab.1.right/0.0.1920.1040/1920.337.1920.1040@1920.337.1920.1040" timestamp="1593904471380" />
     <state x="171" y="181" key="SettingsEditor" timestamp="1593811037611">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
@@ -340,23 +340,43 @@
       <breakpoints>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/Bot.py</url>
-          <line>1293</line>
-          <option name="timeStamp" value="29" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/Bot.py</url>
-          <line>296</line>
+          <line>308</line>
           <option name="timeStamp" value="53" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/Bot.py</url>
-          <line>297</line>
+          <line>309</line>
           <option name="timeStamp" value="54" />
         </line-breakpoint>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/Bot.py</url>
-          <line>330</line>
+          <line>342</line>
           <option name="timeStamp" value="66" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Bot.py</url>
+          <line>253</line>
+          <option name="timeStamp" value="94" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Bot.py</url>
+          <line>467</line>
+          <option name="timeStamp" value="96" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Bot.py</url>
+          <line>249</line>
+          <option name="timeStamp" value="97" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Bot.py</url>
+          <line>251</line>
+          <option name="timeStamp" value="100" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/Bot.py</url>
+          <line>1351</line>
+          <option name="timeStamp" value="101" />
         </line-breakpoint>
       </breakpoints>
       <default-breakpoints>
@@ -369,6 +389,6 @@
     </breakpoint-manager>
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
-    <SUITE FILE_PATH="coverage/SummonerTrackerClientP$Bot.coverage" NAME="Bot Coverage Results" MODIFIED="1593888151805" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/SummonerTrackerClientP$Bot.coverage" NAME="Bot Coverage Results" MODIFIED="1593911268603" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
   </component>
 </project>

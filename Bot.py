@@ -209,11 +209,13 @@ class SetterWindow(QDialog):
             self.updateTimerButton(btn)
     def updateTimerButton(self, spellbutton):
         if spellbutton.showflag:
-            print(spellbutton.showflag)
             track = dataholder.getTrack(spellbutton.id)
             if track is not None:
                 left = int(track.endTrack - gameTime.elapsed)
-                spellbutton.setText(str(left))
+                if left <= 0:
+                    spellbutton.setText("")
+                else:
+                    spellbutton.setText(str(left))
     def getButton(self, index):
         if index >= 10:
             return self.ultButtons[index - 10]
@@ -243,10 +245,20 @@ class SetterWindow(QDialog):
             if spellbutton.isEnabled() and spellbutton.set:
                 self.redButton(spellbutton)
                 return True
+            if not spellbutton.set:
+                id = (spellbutton.id)
+                spell = dataholder.getSpell(id)
+                cd = calculateCD(spell)
+                if spellbutton.spellName != 'ult':
+                    cd = int(cd)
+                spellbutton.setText(str(cd))
+                print('show')
         if event.type() == QtCore.QEvent.HoverLeave:
             self.waitandSeeIfIdle()
             if spellbutton.set:
                 self.darkButton(spellbutton)
+            else:
+                spellbutton.setText(spellbutton.spellName)
             return True
         return False
 
@@ -336,7 +348,7 @@ class SetterWindow(QDialog):
         path = os.path.join(appdatadir.jsondir, iconName + ".png")
         path = path.replace('\\', '/')
         #spellButton.setStyleSheet('border-image: url("'+path+'");')
-        return 'border-image: url("' + path + '");'
+        return 'border-image: url("' + path + '"); color:rgb(240,240,240); text-shadow: -1px 0 black, 0 1px black, 1px 0 black, 0 -1px black;'
     def darkStyle(self, iconName):
         return self.brightStyle(iconName + 'darken')+"color: rgb(230,230,230);"
 
@@ -474,7 +486,7 @@ class SpellButton(QPushButton):
         super().__init__(text)
         self.spellName = text
         self.brightStyle = "color: rgb(230,230,230); background-color: rgb(150,150,150)"
-        self.darkStyle = "color: rgb(150,150,150); background-color: rgb(90,90,90)"
+        self.darkStyle = "color: rgb(230,230,230); background-color: rgb(90,90,90)"
         self.set = False
         self.justPressed = False
         self.id = 'empty'
@@ -705,23 +717,34 @@ class Spell():
         self.cd = cd
         self.icon = icon
 
-def calculateCD(spell):
+def calculateCD(spellObject):
+    if spellObject is None:
+        return -1
     gtcdr = dataholder.getgameTypeCdr()
-    if isinstance(spell, UltSpell):
-        lvl = str(dataholder.getLvL(spell.champion))
-        cd = spell.cddir.get(lvl)
-        print(cd)
+    if isinstance(spellObject, UltSpell):
+        lvl = str(dataholder.getLvL(spellObject.champion))
+        cd = spellObject.cddir.get(lvl)
+        cdr = getItemUcdr(spellObject)
+
+        if cdr >= 40:
+            cdr = 40
+        cdr = cdr + spellObject.runecdr
+        cd = cd * (1- (cdr/100.0))
+        logging.debug('st? calculate ultspell cd '+str(cd))
         return cd
     else:
-        cd = spell.cd
-        if spell.spellname == 'tp':
-            cd = tpCD(spell)
+        cd = spellObject.cd
+        if spellObject.spellname == 'tp':
+            cd = tpCD(spellObject)
         if gtcdr == spellDatabase.get("ARAM"):
-            cd = cd * (1.0 - (spell.runecdr / 100.0))
-            cdr = gtcdr + getItemCDR(spell)
-            return cd * (1.0 - ((gtcdr + getItemCDR(spell)) / 100.0))
+            cd = cd * (1.0 - (spellObject.runecdr / 100.0))
+            cdr = gtcdr + getItemScdr(spellObject)
+            return
+            cd = cd * (1.0 - ((gtcdr + getItemScdr(spellObject)) / 100.0))
         else:
-            return cd * (1.0 - ((getItemCDR(spell) + spell.runecdr) / 100.0))
+            cd = cd * (1.0 - ((getItemScdr(spellObject) + spellObject.runecdr) / 100.0))
+        logging.debug('st? calculate summonerspell cd ' + str(cd))
+        return cd
 
 class TrackEntry():
     def __init__(self, spell, modifier):
@@ -815,15 +838,22 @@ class Dataholder():
             self.spells = {}
             self.lvls = {}
             self.tracks = {}
-            self.items = {}
+            self.championitems = {}
             self.buttons = {}
             self.gtcdr = 0.0
+    def saveItems(self, dict):
+        with datalock:
+            self.allitems = dict
+    def getItemCD(self, id):
+        with datalock:
+            ret = self.allitems.get(str(id))
+        return ret
     def saveChampionIds(self, dict):
         with datalock:
             self.championIds = dict
     def getChampionIds(self, name):
         with datalock:
-            ret = self.championIds[name]
+            ret = self.championIds.get(name)
         return ret
     def setgameTypeCdr(self,cdr):
         with datalock:
@@ -839,12 +869,12 @@ class Dataholder():
             self.lvls = {}
             self.tracks = {}
             self.buttons = {}
-            self.items = {}
+            self.championitems = {}
             self.gtcdr = 0.0
 
     def setItems(self, champion, j):
         with datalock:
-            self.items[champion] = j
+            self.championitems[champion] = j
 
     def addButton(self, id, btnindex):
         with datalock:
@@ -880,7 +910,7 @@ class Dataholder():
         return ret
     def getItem(self, champion):
         with datalock:
-            ret = self.items.get(champion)
+            ret = self.championitems.get(champion)
         return ret
 
     def getSpell(self, id):
@@ -917,19 +947,26 @@ def sortTracks():  # called while thread is locked
 dataholder = Dataholder()
 
 
-def getItemCDR(spell):
-    items = dataholder.getItem(spell.champion)
-    if isinstance(spell, SummonerSpell):
-        scdr = 0.0
-        for item in items:
-            name = item.get("displayName")
-            r = spellDatabase.get(name)
-            if r is None:
-                r = 0.0
-            scdr = scdr + r
-        return scdr
-    return 0.0
+def getItemScdr(summonerspell):
+    items = dataholder.getItem(summonerspell.champion)
+    scdr = 0.0
+    for item in items:
+        name = item.get("displayName")
+        r = spellDatabase.get(name)
+        if r is None:
+            r = 0.0
+        scdr = scdr + r
+    return scdr
 
+def getItemUcdr(ultspell):
+    items = dataholder.getItem(ultspell.champion)
+    ucdr = 0.0
+    for item in items:
+        id = item.get('itemID')
+        cd = dataholder.getItemCD(id)
+        if cd is not None:
+            ucdr = ucdr + cd
+    return ucdr
 
 def loadLevelsAndItems():
     logging.debug('gc* ll0 attempting to load levels (0/1)')
@@ -1279,15 +1316,18 @@ spellDatabase = {
     'Inspiration': 5.0
 }
 def initCDragon():
-    if not readSummonerSpellsFromFile() or not readChampionIdsFromFile():
+    if not readSummonerSpellsFromFile() or not readChampionIdsFromFile() or not loadItems():
         updateCDragon()
         readSummonerSpellsFromFile()
         readChampionIdsFromFile()
+        loadItems()
+
 
 def updateCDragon():
     logging.debug('m? ucd0 updating game data with community dragon')
     updateSummonSpellJson()
     updateChampionIds()
+    updateItems()
 from PIL import Image, ImageEnhance
 
 def updateSummonerIcon(name, iconPath):
@@ -1300,6 +1340,7 @@ def updateSummonerIcon(name, iconPath):
     try:
         filepath = os.path.join(appdatadir.jsondir, name+'.png')
         darken = os.path.join(appdatadir.jsondir, name+'darken.png')
+        brighten = os.path.join(appdatadir.jsondir, name + 'brighten.png')
         f = open(filepath, 'wb')
         data = requests.get("http://raw.communitydragon.org/latest/game/data/spells/icons2d/"+iconPath, verify=False).content
 
@@ -1309,14 +1350,13 @@ def updateSummonerIcon(name, iconPath):
         factor = 0.5  # darkens the image
         enhancer = ImageEnhance.Brightness(im1)
         im2 = enhancer.enhance(factor)
+        ImageEnhance.Contrast()
         im2.save(darken)
     except Exception as e:
-        print(e)
         return
 
 def loadUlt(chamName):
     chamNum = dataholder.getChampionIds(chamName)
-    print(chamName, chamNum)
     ret = loadUltFromFile(chamNum)
     if ret == None:
         updateUltJson(chamNum)
@@ -1433,25 +1473,41 @@ def ultcd(champId):
     try:
         r = requests.get("https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/champions/101.json", verify=False)
     except Exception as e:
-        print(e)
         return
     j = json.loads(r.content)
-
+import re
 def updateItems():
     try:
         r = requests.get("http://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/items.json", verify=False)
     except Exception as e:
         return
     j = json.loads(r.content)
+    p = re.compile('([0-9]*)% Cooldown Reduction')
     dict = {}
-    for champion in j:
-        #find spell image and save it
-        name = champion.get('name')
-        id = champion.get('id')
-        dict[name] = id
-    filepath = os.path.join(appdatadir.jsondir, "championId.json")
+    for item in j:
+        itemid = item.get('id')
+        for c in item.get('categories'):
+            if c == 'CooldownReduction':
+                desc = item.get('description')
+                cdlist = p.findall(desc)
+                if len(cdlist) > 0:
+                    cd = 0
+                    for c in cdlist:
+                        cd = cd + int(c)
+                    dict[itemid] = cd
+    filepath = os.path.join(appdatadir.jsondir, "items.json")
     with open(filepath, 'w') as outfile:
         json.dump(dict, outfile)
+
+def loadItems():
+    filepath = os.path.join(appdatadir.jsondir, "items.json")
+    try:
+        with open(filepath) as json_file:
+            data = json.load(json_file)
+            dataholder.saveItems(data)
+        return True
+    except IOError:
+        return False
 
 if __name__ == '__main__':
     import logging
@@ -1493,8 +1549,6 @@ if __name__ == '__main__':
             logging.StreamHandler()
         ]
     )
-
-    updateChampionIds()
     initCDragon()
 
     logging.debug('m0 overlay started! (0/4 startup, 0/5 entire run)')
