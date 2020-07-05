@@ -5,7 +5,7 @@ An Overlay intended for Tracking Summoner Spells and sharing them with teammates
 
 [**Download here**](https://github.com/CodeIsJustLikeMagic/SummonerTrackerClientP/releases/latest)
 
-[Screenshots](https://imgur.com/a/Dxjq56W)
+[Screenshots](https://imgur.com/a/R8PoPoN)
 
 How to use it
 ------------
