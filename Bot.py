@@ -48,7 +48,7 @@ def resource_path(relative_path):
 
 
 class SetterWindow(QDialog):
-    def __init__(self):
+    def __init__(self, width, height):
         super().__init__()
         self.setWindowFlags(Qt.WindowStaysOnTopHint | Qt.FramelessWindowHint)
         self.setAttribute(Qt.WA_TranslucentBackground)
@@ -184,6 +184,9 @@ class SetterWindow(QDialog):
         c.toogleShow.connect(lambda: self.toogleShow())
         c.updateTimers.connect(self.updateTimers)
         self.lastAction = time.time()
+
+        self.move(width*0.85, height*0.2)
+
         self.show()
         try:
 
@@ -478,6 +481,7 @@ class SetterWindow(QDialog):
 
     def StartSpellTrack(self, index, modifier):
         logging.debug('st0 starting spell track (0/10)')
+
         self.waitandSeeIfIdle()
         id = dataholder.getIdByBtnIndex(index)
         spell = dataholder.getSpell(id)
@@ -549,8 +553,9 @@ def modifyTrack(id, endTrack):
 
 class InformationWindow(QDialog):
 
-    def __init__(self):
+    def __init__(self, width, height):
         super().__init__()
+
         layout = QGridLayout()
         self.setLayout(layout)
 
@@ -598,7 +603,7 @@ class InformationWindow(QDialog):
         self.setWindowIcon(icon)
         menu = QMenu()
         cdragon = menu.addAction("Reload Spell and Item Data")
-        cdragon.triggered.connect(updateCDragon)
+        cdragon.triggered.connect(self.updateCDragon)
         openHotKeyFileAction = menu.addAction("Set Hotkey")
         global hotkeyFilePath
         openHotKeyFileAction.triggered.connect(self.setHotkey)
@@ -629,6 +634,9 @@ class InformationWindow(QDialog):
         self.timer = QTimer()
         self.timer.timeout.connect(self.clearStatus)
         self.timer.setSingleShot(True)
+
+        self.move(width*0.0, height*0.5)
+
         self.show()
         try:
             with open(self.postxtfilepath) as f:
@@ -641,7 +649,9 @@ class InformationWindow(QDialog):
             logging.debug('m* no position file')
 
         logging.debug('m2 overlay window created')
-
+    def updateCDragon(self):
+        updateCDragon()
+        updateAllUlts()
     def showHelloInfo(self):
         c.status.emit(mqttclient.helloInfo)
         self.timer.start(10000)
@@ -803,7 +813,7 @@ class SummonerSpell():
 class UltSpell():
     def __init__(self, cham, cddir, mqttdesc,runecdr):
         self.champion = cham
-        self.runecdr = runecdr
+        self.cosmicInsight = runecdr
         self.spellname = 'ult'
         self.cddir = cddir
         self.mqttdesc = mqttdesc
@@ -1033,6 +1043,21 @@ def getItemUcdr(ultspell):
 
     return ucdr
 
+
+def updateAllUlts():
+    allspells = {}
+    with datalock:
+        allspells = dataholder.spells
+
+    for id, spellobject in allspells.items():
+        if isinstance(spellobject, UltSpell):
+            cdDir = loadUlt(spellobject.champion)
+            spellobject.cddir = cdDir
+            dataholder.addSpell(id, spellobject)
+    #cdDir = loadUlt(champ)
+    #dataholder.addSpell(id, UltSpell(champ, cdDir, ultindex, runecdr))
+
+
 eventnum = -1
 def loadLevelsAndItems():
     global eventnum
@@ -1059,13 +1084,12 @@ def loadLevelsAndItems():
                 if event.get("DragonType") == "Air":
                     #check if killer is enemy
                     killer = event.get("KillerName")
-                    print('new could drake killed')
+                    logging.debug('gc* ll* could drake killed by enemy')
                     if dataholder.isEnemy(killer) is not None:
                         old = dataholder.getclouddrakes()
                         print('new cloud drake killed by enemy')
+                        # cloud drake cdr hardcoded!!!
                         new = old + 10
-                        if new > 40:
-                            new = 40
                         dataholder.setcoulddrakes(new)
     logging.debug('gc*  ll1 loadlevel success')
 
@@ -1106,7 +1130,7 @@ def loadWithApi():
         if player.get("team", "") != myteam:
             name = player.get("summonerName", "")
             champ = player.get("championName", "")
-            dataholder.addEnemy(champ)
+            dataholder.addEnemy(name)
             sp1 = player.get("summonerSpells").get("summonerSpellOne").get("displayName")
             sp2 = player.get("summonerSpells").get("summonerSpellTwo").get("displayName")
 
@@ -1416,6 +1440,7 @@ spellDatabase = {
     'ARAM': 40.0,
     'Inspiration': 5.0
 }
+
 def initCDragon():
     if not readSummonerSpellsFromFile() or not readChampionIdsFromFile() or not loadItems():
         updateCDragon()
@@ -1424,8 +1449,19 @@ def initCDragon():
         loadItems()
 
 
+def deleteOldDragonData():
+    folder = appdatadir.jsondir
+    for filename in os.listdir(folder):
+        file_path = os.path.join(folder,filename)
+        try:
+            if os.path.isfile(file_path) or os.path.islink(file_path):
+                os.unlink(file_path)
+        except Exception as e:
+            logging.error('m? ucd0 failed to delete old dragon data '  + str(e))
+
 def updateCDragon():
-    logging.debug('m? ucd0 updating game data with community dragon')
+    deleteOldDragonData()
+    logging.debug('m? ucd1 updating game data with community dragon')
     updateSummonSpellJson()
     updateChampionIds()
     updateItems()
@@ -1668,7 +1704,9 @@ if __name__ == '__main__':
 
     logging.debug('m0 overlay started! (0/4 startup, 0/5 entire run)')
     app = QApplication([])
-    setterWindow = SetterWindow()
-    window = InformationWindow()
+    screen_resolution = app.desktop().screenGeometry()
+    width, height = screen_resolution.width(), screen_resolution.height()
+    setterWindow = SetterWindow(width, height)
+    window = InformationWindow(width, height)
     startThreads()
     app.exec_()
