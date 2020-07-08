@@ -6,7 +6,7 @@ from PIL import Image, ImageEnhance, ImageDraw
 from PyQt5 import QtCore
 from PyQt5.QtGui import QFont, QIcon, QColor
 from PyQt5.QtWidgets import QApplication, QLabel, QDialog, QVBoxLayout, QSystemTrayIcon, QMenu, QDesktopWidget, \
-    QGraphicsDropShadowEffect, QPushButton, QGridLayout, QFrame
+    QGraphicsDropShadowEffect, QPushButton, QGridLayout, QFrame, QDialogButtonBox
 from PyQt5.QtCore import Qt, pyqtSignal, QObject, QTimer, QSize
 import paho.mqtt.client as mqtt
 import threading
@@ -1734,15 +1734,13 @@ def outdated():
     # print(j)
 
 
-version = 'v5.3.1'
-
-
-
+version = 'v5.4.0'
 def handleUpdate():
+
     source = __file__
     base = os.path.basename(__file__)
     base = base.split('.')
-    base[0] = base[0].replace("Updated", "")
+    base[0] = base[0].replace('Updated', '')
     dir = os.path.dirname(__file__)
     updated =  os.path.join(dir , base[0] + "Updated.exe")
     notupdated = os.path.join(dir , base[0]+"."+base[1])
@@ -1753,20 +1751,48 @@ def handleUpdate():
         os.exit()
     else:
         #delete if updated exists.
-        r = outdated()
-        if r is not None:
-            file = download_file(r, updated)
-            print('done')
-            logging.debug('update downloaded updated version')
-            os.startfile(file)
-            os.exit()
+        downloadurl = outdated()
+        if downloadurl is not None: # we are not up to date
+            app2 = QApplication([])
+            u = UpdateDialog(downloadurl, updated)
+            app2.exec_()
         else: # we are up to data. check if updated exists.
             try:
                 os.unlink(updated)
                 logging.debug('update erased unesesarry updated version')
-            except Error as e:
+            except Exception as e:
                 print(e)
+def downloadNewVersion(r, updated):
+    print('downloading...')
+    try:
+        file = download_file(r, updated)
+        deleteOldDragonData()
+    except Exception as e:
+        print(e)
+    print('done')
+    logging.debug('update downloaded updated version')
+    os.startfile(file)
+    os.exit()
+class UpdateDialog(QDialog):
 
+    def __init__(self, downloadurl, updated):
+        super().__init__()
+        self.downloadurl = downloadurl
+        self.updatedpath = updated
+        self.setWindowTitle("TrackerOverlay")
+        QBtn = QDialogButtonBox.Ok | QDialogButtonBox.Cancel
+        self.buttonBox = QDialogButtonBox(QBtn)
+        self.buttonBox.accepted.connect(self.accept)
+        self.buttonBox.rejected.connect(self.reject)
+        self.layout = QVBoxLayout()
+        self.layout.addWidget(self.buttonBox)
+        self.setLayout(self.layout)
+        self.show()
+    def accept(self):
+        print('accepted')
+        downloadNewVersion(self.downloadurl, self.updatedpath)
+    def reject(self) -> None:
+        print('rejected')
 def download_file(url, destination):
     with requests.get(url, stream=True) as r:
         with open(destination, 'wb') as f:
@@ -1774,7 +1800,6 @@ def download_file(url, destination):
 
     return destination
 if __name__ == '__main__':
-
     handleUpdate()
 
     try:
@@ -1819,9 +1844,6 @@ if __name__ == '__main__':
             logging.StreamHandler()
         ]
     )
-
-    # todo show notification that new version exists.
-    outdated()
     initCDragon()
 
     logging.debug('m0 overlay started! (0/4 startup, 0/5 entire run)')
