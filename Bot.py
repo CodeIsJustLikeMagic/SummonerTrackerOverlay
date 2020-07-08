@@ -1700,6 +1700,9 @@ if __name__ == '__main__':
             logging.StreamHandler()
         ]
     )
+
+    #todo show notification that new version exists.
+
     initCDragon()
 
     logging.debug('m0 overlay started! (0/4 startup, 0/5 entire run)')
