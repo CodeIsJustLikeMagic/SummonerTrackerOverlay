@@ -3,7 +3,7 @@
 block_cipher = None
 
 
-a = Analysis(['D:\\Eigene Dateien\\Dokumente\\Github\\SummonerTrackerClientP\\Bot.py'],
+a = Analysis(['D:\\Eigene Dateien\\Dokumente\\Github\\SummonerTrackerClientP\\TrackerOverlay.py'],
              pathex=['D:\\Eigene Dateien\\Dokumente\\GitHub\\TrackerOverlayBuild\\OneFileBuild'],
              binaries=[],
              datas=[],

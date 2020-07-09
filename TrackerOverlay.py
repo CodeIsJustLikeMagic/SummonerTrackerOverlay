@@ -1,4 +1,4 @@
-# Bot.py
+# TrackerOverlay.py
 from datetime import datetime
 
 from PIL.ImageDraw import ImageDraw
@@ -202,7 +202,6 @@ class SetterWindow(QDialog):
                 pos = f.read()
                 pos = pos.split(' ')
                 if len(pos) == 2:
-                    # print('moving overlay to position from appdata file')
                     self.move(int(int(pos[0]) / 2), int(int(pos[1]) / 2))
         except FileNotFoundError:
             pass
@@ -226,7 +225,6 @@ class SetterWindow(QDialog):
             if track is not None:
                 left = int(track.endTrack - gameTime.elapsed)
                 if left < 0:
-                    print('settext ""')
                     spellbutton.setText("")
                 else:
                     spellbutton.setText(str(left))
@@ -241,10 +239,8 @@ class SetterWindow(QDialog):
         btn = self.getButton(index)
         if btn.justPressed:
             btn.justPressed = False
-            print('ignore disable', index)
             return
         btn.setEnabled(False)
-        print('disabled', index)
         QTimer.singleShot(1300, lambda: self.unblock(index))
 
     def unblock(self, index):
@@ -252,7 +248,6 @@ class SetterWindow(QDialog):
         spellbutton.setEnabled(True)
         if spellbutton.underMouse():
             self.redButton(spellbutton)
-        print('enabled', index)
 
     def eventFilter(self, spellbutton, event):
         if event.type() == QtCore.QEvent.HoverEnter:
@@ -267,9 +262,7 @@ class SetterWindow(QDialog):
                 if spellbutton.spellName != 'ult':
                     cd = int(cd)
                 spellbutton.setText(str(cd))
-                print(spellbutton.brighterStyle)
                 spellbutton.setStyleSheet(spellbutton.brighterStyle)
-                print('show')
         if event.type() == QtCore.QEvent.HoverLeave:
             self.waitandSeeIfIdle()
             if spellbutton.set:
@@ -363,7 +356,6 @@ class SetterWindow(QDialog):
 
     def brightButton(self, spellbutton):
         spellbutton.setStyleSheet(spellbutton.brightStyle)
-        print('setbrightbutton')
         spellbutton.setText(spellbutton.spellName)
         spellbutton.showflag = False
 
@@ -392,7 +384,6 @@ class SetterWindow(QDialog):
         self.championLabels[index].setText(val)
 
     def setbuttondata(self, index, val, id):
-        print('setbuttondata', index, val, id)
         logging.debug('     gc* setting spell label ' + str(index) + ' ' + str(val))
         spellButton = self.getButton(index)
         spellButton.setText('')
@@ -436,7 +427,6 @@ class SetterWindow(QDialog):
         self.policyhideWhenInactive()
 
     def mousePressEvent(self, event):
-        # print('mouse Press Event')
         self.__mousePressPos = None
         self.__mouseMovePos = None
         if event.button() == Qt.LeftButton:
@@ -470,11 +460,9 @@ class SetterWindow(QDialog):
 
     def checkStillIdle(self):
         if time.time() - self.lastAction >= 5.8:
-            # print('idle detected')
             self.hide()
 
     def ModifySpellTrack(self, index):
-        print('modify spell track')
         logging.debug('st0 modify spell -30 sec')
         self.waitandSeeIfIdle()
         id = dataholder.getIdByBtnIndex(index)
@@ -489,13 +477,11 @@ class SetterWindow(QDialog):
                 modendtrack = old.endTrack - 30
                 mqttclient.send('m_' + str(id) + '_' + str(modendtrack))
                 logging.debug('st3 send mqtt modified old')
-                print('just pressed', index)
                 self.getButton(index).justPressed = True
                 return
         trackentry = TrackEntry(spell, 30)
         mqttclient.send('a_' + str(id) + '_' + str(trackentry.endTrack))
         logging.debug('st3 send -30 sec mqtt')
-        print('just pressed', index)
         self.getButton(index).justPressed = True
 
     def StartSpellTrack(self, index, modifier):
@@ -513,7 +499,6 @@ class SetterWindow(QDialog):
                 mqttclient.send('r_' + str(id))
                 return
         trackentry = TrackEntry(spell, modifier)
-        print('just pressed', index)
         self.getButton(index).justPressed = True
         mqttclient.send('a_' + str(id) + '_' + str(trackentry.endTrack))
         logging.debug('st3 send mqtt')
@@ -631,12 +616,12 @@ class InformationWindow(QDialog):
         toggleSetterAction = menu.addAction("Toggle hide Setter when idle")
         toggleSetterAction.triggered.connect(lambda: c.toogleShow.emit())
         menu.addSeparator()
-        showmqttInfoAction = menu.addAction("Show mqtt info")
-        showmqttInfoAction.triggered.connect(self.showMQTTInfo)
-        newConnection = menu.addAction('Reload CurrentGame Info')
-        newConnection.triggered.connect(mqttclient.renonnectmqtt)
         cdragon = menu.addAction("Update Spell and Item Data")
         cdragon.triggered.connect(self.updateCDragon)
+        newConnection = menu.addAction('Reload CurrentGame Info')
+        newConnection.triggered.connect(mqttclient.renonnectmqtt)
+        showmqttInfoAction = menu.addAction("Show mqtt info")
+        showmqttInfoAction.triggered.connect(self.showMQTTInfo)
         menu.addSeparator()
         exitAction = menu.addAction("Exit")
         exitAction.triggered.connect(self.close)
@@ -813,7 +798,6 @@ class TrackEntry():
         self.endTrack = self.endTrack - modifier
         self.spell = spell
         self.endTrack = float("{:.2f}".format(self.endTrack))
-        print('created Track', cd, spell.spellname)
         self.updateEndTrack(self.endTrack)
 
     def updateEndTrack(self, endTrack):
@@ -1124,10 +1108,9 @@ def loadLevelsAndItems():
                 if event.get("DragonType") == "Air":
                     # check if killer is enemy
                     killer = event.get("KillerName")
-                    logging.debug('gc* ll* could drake killed by enemy')
                     if dataholder.isEnemy(killer) is not None:
                         old = dataholder.getclouddrakes()
-                        print('new cloud drake killed by enemy')
+                        logging.debug('gc* ll* could drake killed by enemy')
                         # cloud drake cdr hardcoded!!!
                         new = old + 10
                         dataholder.setcoulddrakes(new)
@@ -1219,7 +1202,6 @@ def loadWithApi():
 def on_message(client, userdata, message):
     msg = message.payload.decode("utf-8")
     logging.debug('st4 reciveing mqtt message ' + str(msg))
-    # print('message', msg)
     msg = msg.split('_')
     if msg[0] == 'a':
         saveTrack(msg[1], msg[2])
@@ -1241,7 +1223,6 @@ class Mqttclient():
         self.connectionInfo = 'will connect once game starts'
 
     def connect(self, topicsuffix, clientIdSuffix):
-        # print('connecting mqtt client')
         if topicsuffix is None:
             return
         broker_address = "mqtt.eclipse.org"
@@ -1249,7 +1230,6 @@ class Mqttclient():
         self.topic = "SpellTracker2/Match" + topicsuffix
         client = mqtt.Client(self.clientID)
         client.on_message = on_message
-        # print(clientID,topic)
         client.connect(broker_address)
         self.connectionInfo = 'connected\n' + 'topic ' + self.topic + '\nclient id ' + self.clientID
         keys = '^'
@@ -1303,7 +1283,6 @@ def java_string_hashcode(s):
 
 
 def hashNames(li):
-    # print('hashNames', li)
     li = sorted(li)
     con = ''
     for e in li:
@@ -1319,7 +1298,6 @@ tries = 1
 def testConnection(s):
     global activeGameFound
     logging.debug('gc1 trying to find game/ updating time and levels. game found :' + str(activeGameFound))
-    # print(activeGameFound)
     global tries
     try:
         r = s.get("https://127.0.0.1:2999/liveclientdata/gamestats", verify=False)
@@ -1345,20 +1323,16 @@ def testConnection(s):
         return
     except Exception as e:
         logging.debug('gc2 encountered (network)error in gamecheck' + str(e))
-        # print(tries)
         if tries == 3:
-            # print(tries, 1)
             c.status.emit('')
             tries = tries + 1
         elif tries == 2:
             c.status.emit('Will keep looking even when hiding')
             tries = tries + 1
         elif tries == 1:
-            # print(tries, 'no active game')
             c.status.emit('Looking for active game...')
             tries = tries + 1
         if activeGameFound:
-            # print('disconnect previous mqtt connection')
             mqttclient.disconnectmqtt()
         activeGameFound = False
         return
@@ -1720,16 +1694,25 @@ def loadItems():
 
 
 def lookForUpdate():
-    source = __file__
-    base = os.path.basename(__file__)
+    if getattr(sys, 'frozen', False):
+        source = (sys.executable)
+    elif __file__:
+        source = (__file__)
+    print(source)
+    dir = os.path.dirname(source)
+    logging.debug('updater applicationpath: '+str(source))
+    logging.debug('updater '+str(dir))
+    base = os.path.basename(source)
     base = base.split('.')
-    base[0] = base[0].replace('Updated', '')
-    dir = os.path.dirname(__file__)
-    updated =  os.path.join(dir , base[0] + "Updated.exe")
-    notupdated = os.path.join(dir , base[0]+"."+base[1])
-    if str(__file__).endswith("Updated."+base[1]):
-        shutil.copyfile(source,notupdated)
+    logging.debug('updater basename '+str(base[0]))
+    basenoupd = base[0].replace('Updated', '')
+    updated =  os.path.join(dir , base[0] + "Updated."+base[1])
+    logging.debug('updater updatedfile '+str(updated))
+    notupdated = os.path.join(dir , basenoupd+"."+base[1])
+    logging.debug('updater notupdatedfile '+str(notupdated))
+    if str(base[0]).endswith("Updated"):
         logging.debug('update copy self to name without update')
+        shutil.copyfile(source,notupdated)
         os.startfile(notupdated)
         sys.exit()
     else:
@@ -1737,13 +1720,18 @@ def lookForUpdate():
         downloadurl, newversion, notes = outdated()
         if downloadurl is not None: # we are not up to date
             return downloadurl, updated, newversion, notes
-        else: # we are up to data. check if updated exists.
+        else: # we are up to date. check if updated exists.
             try:
-                os.unlink(updated)
-                logging.debug('update erased unesesarry updated version')
+                t4 = threading.Thread(name='deleteupdatedversion', target= lambda: delete(updated))
+                t4.setDaemon(True)
+                t4.start()
             except Exception as e:
-                print(e)
+                logging.debug('update error '+str(e))
             return None, None, None, None
+def delete(updated):
+    time.sleep(1)
+    os.unlink(updated)
+    logging.debug('update erased unesesarry updated version')
 def outdated():
     try:
         r = requests.get("https://api.github.com/repos/CodeIsJustLikeMagic/SummonerTrackerOverlay/releases/latest",
@@ -1754,7 +1742,7 @@ def outdated():
     tagName = j.get('tag_name')
     global version
     if tagName == version:
-        False
+        return None,None,None
     else:
         # visit github to get the latest release
         # https://github.com/CodeIsJustLikeMagic/SummonerTrackerOverlay/releases/latest
@@ -1842,11 +1830,10 @@ class downloadThread(QThread):
             self.fileobj.close()    #Close file
             self.exit(0)            #Close thread
 
-
         except Exception as e:
             print(e)
 
-version = 'v5.4.0'
+version = 'v5.4.3'
 
 if __name__ == '__main__':
     try:
@@ -1858,7 +1845,6 @@ if __name__ == '__main__':
     except FileExistsError:
         pass
     debugpath = os.path.join(appdatadir.overlaydir, "debug.log")
-    print(debugpath)
     logStartPath = os.path.join(appdatadir.overlaydir, "startLogdate.txt")
     try:
         with open(logStartPath) as f:
