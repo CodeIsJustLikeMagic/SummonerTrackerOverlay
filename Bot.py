@@ -5,9 +5,9 @@ from PIL.ImageDraw import ImageDraw
 from PIL import Image, ImageEnhance, ImageDraw
 from PyQt5 import QtCore
 from PyQt5.QtGui import QFont, QIcon, QColor
-from PyQt5.QtWidgets import QApplication, QLabel, QDialog, QVBoxLayout, QSystemTrayIcon, QMenu, QDesktopWidget, \
-    QGraphicsDropShadowEffect, QPushButton, QGridLayout, QFrame, QDialogButtonBox
-from PyQt5.QtCore import Qt, pyqtSignal, QObject, QTimer, QSize
+from PyQt5.QtWidgets import QApplication, QLabel, QDialog, QSystemTrayIcon, QMenu, QDesktopWidget, \
+    QGraphicsDropShadowEffect, QPushButton, QGridLayout, QFrame, QMessageBox
+from PyQt5.QtCore import Qt, pyqtSignal, QObject, QTimer
 import paho.mqtt.client as mqtt
 import threading
 from numpy import unicode
@@ -175,6 +175,7 @@ class SetterWindow(QDialog):
             btn.installEventFilter(self)
 
         self.postxtfilepath = os.path.join(appdatadir.overlaydir, "pos2.txt")
+        self.a = c
         c.setterChampion.connect(lambda index, val: self.setchampionlabel(index, val))
         c.settSpell.connect(lambda index, val, id: self.setbuttondata(index, val, id))
         c.resetPos.connect(self.resetPos)
@@ -619,8 +620,6 @@ class InformationWindow(QDialog):
         trayIcon = QSystemTrayIcon(icon, self)
         self.setWindowIcon(icon)
         menu = QMenu()
-        cdragon = menu.addAction("Reload Spell and Item Data")
-        cdragon.triggered.connect(self.updateCDragon)
         openHotKeyFileAction = menu.addAction("Set Hotkey")
         global hotkeyFilePath
         openHotKeyFileAction.triggered.connect(self.setHotkey)
@@ -630,10 +629,14 @@ class InformationWindow(QDialog):
         resetPosAction.triggered.connect(self.resetPos)
         toggleSetterAction = menu.addAction("Toggle hide Setter when idle")
         toggleSetterAction.triggered.connect(lambda: c.toogleShow.emit())
+        menu.addSeparator()
         showmqttInfoAction = menu.addAction("Show mqtt info")
         showmqttInfoAction.triggered.connect(self.showMQTTInfo)
-        newConnection = menu.addAction('Reload CurrentGame')
+        newConnection = menu.addAction('Reload CurrentGame Info')
         newConnection.triggered.connect(mqttclient.renonnectmqtt)
+        cdragon = menu.addAction("Update Spell and Item Data")
+        cdragon.triggered.connect(self.updateCDragon)
+        menu.addSeparator()
         exitAction = menu.addAction("Exit")
         exitAction.triggered.connect(self.close)
         # self.aboutToQuit(disconnectmqtt())
@@ -1417,7 +1420,7 @@ def loadHotkey():
     try:
         keyboard.clear_all_hotkeys()
     except Exception as e:
-        print(e)
+        pass
     keyboard.add_hotkey(keys, reactToHotKey)
 
 
@@ -1730,7 +1733,7 @@ def outdated():
         # visit github to get the latest release
         # https://github.com/CodeIsJustLikeMagic/SummonerTrackerOverlay/releases/latest
         ret = j.get('assets')[0].get('browser_download_url')
-        return ret
+        return ret, tagName
     # print(j)
 
 
@@ -1748,21 +1751,22 @@ def handleUpdate():
         shutil.copyfile(source,notupdated)
         logging.debug('update copy self to name without update')
         os.startfile(notupdated)
-        os.exit()
+        sys.exit()
     else:
         #delete if updated exists.
-        downloadurl = outdated()
+        downloadurl, newversion = outdated()
         if downloadurl is not None: # we are not up to date
-            app2 = QApplication([])
-            u = UpdateDialog(downloadurl, updated)
-            app2.exec_()
+            return downloadurl, updated, newversion
         else: # we are up to data. check if updated exists.
             try:
                 os.unlink(updated)
                 logging.debug('update erased unesesarry updated version')
             except Exception as e:
                 print(e)
+            return None, None, None
+
 def downloadNewVersion(r, updated):
+
     print('downloading...')
     try:
         file = download_file(r, updated)
@@ -1772,27 +1776,9 @@ def downloadNewVersion(r, updated):
     print('done')
     logging.debug('update downloaded updated version')
     os.startfile(file)
-    os.exit()
-class UpdateDialog(QDialog):
 
-    def __init__(self, downloadurl, updated):
-        super().__init__()
-        self.downloadurl = downloadurl
-        self.updatedpath = updated
-        self.setWindowTitle("TrackerOverlay")
-        QBtn = QDialogButtonBox.Ok | QDialogButtonBox.Cancel
-        self.buttonBox = QDialogButtonBox(QBtn)
-        self.buttonBox.accepted.connect(self.accept)
-        self.buttonBox.rejected.connect(self.reject)
-        self.layout = QVBoxLayout()
-        self.layout.addWidget(self.buttonBox)
-        self.setLayout(self.layout)
-        self.show()
-    def accept(self):
-        print('accepted')
-        downloadNewVersion(self.downloadurl, self.updatedpath)
-    def reject(self) -> None:
-        print('rejected')
+    sys.exit()
+
 def download_file(url, destination):
     with requests.get(url, stream=True) as r:
         with open(destination, 'wb') as f:
@@ -1800,8 +1786,6 @@ def download_file(url, destination):
 
     return destination
 if __name__ == '__main__':
-    handleUpdate()
-
     try:
         os.mkdir(appdatadir.overlaydir)
     except FileExistsError:
@@ -1844,10 +1828,22 @@ if __name__ == '__main__':
             logging.StreamHandler()
         ]
     )
-    initCDragon()
-
     logging.debug('m0 overlay started! (0/4 startup, 0/5 entire run)')
     app = QApplication([])
+    url, updated, newversion = handleUpdate()
+    if url is not None:
+        msgBox = QMessageBox()
+        icon = QIcon(resource_path('./assets/trackerIcon.xpm'))
+        msgBox.setWindowIcon(icon)
+        msgBox.setIcon(QMessageBox.Question)
+        msgBox.setText("TrackerOverlay "+newversion+" is available.\nDo you want to update?\nTrackerOverlay will restart if you proceed.")
+        msgBox.setWindowTitle("Update available")
+        msgBox.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+        r = msgBox.exec()
+        if r == QMessageBox.Ok:
+            downloadNewVersion(url, updated)
+
+    initCDragon()
     screen_resolution = app.desktop().screenGeometry()
     width, height = screen_resolution.width(), screen_resolution.height()
     setterWindow = SetterWindow(width, height)
