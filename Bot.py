@@ -6,8 +6,9 @@ from PIL import Image, ImageEnhance, ImageDraw
 from PyQt5 import QtCore
 from PyQt5.QtGui import QFont, QIcon, QColor
 from PyQt5.QtWidgets import QApplication, QLabel, QDialog, QSystemTrayIcon, QMenu, QDesktopWidget, \
-    QGraphicsDropShadowEffect, QPushButton, QGridLayout, QFrame, QMessageBox
-from PyQt5.QtCore import Qt, pyqtSignal, QObject, QTimer
+    QGraphicsDropShadowEffect, QPushButton, QGridLayout, QFrame, QMessageBox, QProgressBar, QHBoxLayout, QWidget, \
+    QVBoxLayout
+from PyQt5.QtCore import Qt, pyqtSignal, QObject, QTimer, QThread
 import paho.mqtt.client as mqtt
 import threading
 from numpy import unicode
@@ -1718,6 +1719,33 @@ def loadItems():
         return False
 
 
+
+
+def lookForUpdate():
+    source = __file__
+    base = os.path.basename(__file__)
+    base = base.split('.')
+    base[0] = base[0].replace('Updated', '')
+    dir = os.path.dirname(__file__)
+    updated =  os.path.join(dir , base[0] + "Updated.exe")
+    notupdated = os.path.join(dir , base[0]+"."+base[1])
+    if str(__file__).endswith("Updated."+base[1]):
+        shutil.copyfile(source,notupdated)
+        logging.debug('update copy self to name without update')
+        os.startfile(notupdated)
+        sys.exit()
+    else:
+        #delete if updated exists.
+        downloadurl, newversion, notes = outdated()
+        if downloadurl is not None: # we are not up to date
+            return downloadurl, updated, newversion, notes
+        else: # we are up to data. check if updated exists.
+            try:
+                os.unlink(updated)
+                logging.debug('update erased unesesarry updated version')
+            except Exception as e:
+                print(e)
+            return None, None, None, None
 def outdated():
     try:
         r = requests.get("https://api.github.com/repos/CodeIsJustLikeMagic/SummonerTrackerOverlay/releases/latest",
@@ -1733,58 +1761,75 @@ def outdated():
         # visit github to get the latest release
         # https://github.com/CodeIsJustLikeMagic/SummonerTrackerOverlay/releases/latest
         ret = j.get('assets')[0].get('browser_download_url')
-        return ret, tagName
-    # print(j)
+        return ret, tagName, j.get('body')
+class DownLoadWidget(QWidget):
+    def __init__(self, downloadUrl, filepath, newversion, notes):
+        super().__init__()
+        layout = QVBoxLayout(self)
+        self.setWindowTitle("Updating...")
+        icon = QIcon(resource_path('./assets/trackerIcon.xpm'))
+        self.setWindowIcon(icon)
+        self.label = QLabel("Update to TrackerOverlay "+newversion +"\n")
+        self.label.setStyleSheet('font-size: 10pt')
+        layout.addWidget(self.label)
+        self.notes = QLabel(notes)
+        layout.addWidget(self.notes)
+        self.progressBar = QProgressBar(self,minimumWidth = 400)
+        self.progressBar.setValue(0)
+        layout.addWidget(self.progressBar)
+        self.show()
+        self.url = downloadUrl
+        self.filepath = filepath
+    def start(self):
+        filesize = requests.get(url, stream=True).headers['Content-Length']
+        fileobject = open(self.filepath, 'wb')
+        self.downloadThread = downloadThread(url, filesize, fileobject, buffer=10240)
+        self.downloadThread.download_proess_signal.connect(self.set_progressbar_value)
+        self.downloadThread.start()
 
+    # Setting progress bar
+    def set_progressbar_value(self, value):
+        self.progressBar.setValue(value)
+        if value == 100:
+            logging.debug('update downloaded updated version')
+            os.startfile(self.filepath)
+            self.close()
+
+#################################################################
+#Download thread
+##################################################################
+class downloadThread(QThread):
+    download_proess_signal = pyqtSignal(int)                        #Create signal
+
+    def __init__(self, url, filesize, fileobj, buffer):
+        super(downloadThread, self).__init__()
+        self.url = url
+        self.filesize = filesize
+        self.fileobj = fileobj
+        self.buffer = buffer
+
+
+    def run(self):
+        try:
+            rsp = requests.get(self.url, stream=True)                #Streaming download mode
+            offset = 0
+            for chunk in rsp.iter_content(chunk_size=self.buffer):
+                if not chunk: break
+                self.fileobj.seek(offset)                            #Setting Pointer Position
+                self.fileobj.write(chunk)                            #write file
+                offset = offset + len(chunk)
+                proess = offset / int(self.filesize) * 100
+                self.download_proess_signal.emit(int(proess))        #Sending signal
+            #######################################################################
+            self.fileobj.close()    #Close file
+            self.exit(0)            #Close thread
+
+
+        except Exception as e:
+            print(e)
 
 version = 'v5.4.0'
-def handleUpdate():
 
-    source = __file__
-    base = os.path.basename(__file__)
-    base = base.split('.')
-    base[0] = base[0].replace('Updated', '')
-    dir = os.path.dirname(__file__)
-    updated =  os.path.join(dir , base[0] + "Updated.exe")
-    notupdated = os.path.join(dir , base[0]+"."+base[1])
-    if str(__file__).endswith("Updated."+base[1]):
-        shutil.copyfile(source,notupdated)
-        logging.debug('update copy self to name without update')
-        os.startfile(notupdated)
-        sys.exit()
-    else:
-        #delete if updated exists.
-        downloadurl, newversion = outdated()
-        if downloadurl is not None: # we are not up to date
-            return downloadurl, updated, newversion
-        else: # we are up to data. check if updated exists.
-            try:
-                os.unlink(updated)
-                logging.debug('update erased unesesarry updated version')
-            except Exception as e:
-                print(e)
-            return None, None, None
-
-def downloadNewVersion(r, updated):
-
-    print('downloading...')
-    try:
-        file = download_file(r, updated)
-        deleteOldDragonData()
-    except Exception as e:
-        print(e)
-    print('done')
-    logging.debug('update downloaded updated version')
-    os.startfile(file)
-
-    sys.exit()
-
-def download_file(url, destination):
-    with requests.get(url, stream=True) as r:
-        with open(destination, 'wb') as f:
-            shutil.copyfileobj(r.raw, f)
-
-    return destination
 if __name__ == '__main__':
     try:
         os.mkdir(appdatadir.overlaydir)
@@ -1830,23 +1875,27 @@ if __name__ == '__main__':
     )
     logging.debug('m0 overlay started! (0/4 startup, 0/5 entire run)')
     app = QApplication([])
-    url, updated, newversion = handleUpdate()
+    url, updated, newversion, notes = lookForUpdate()
+    updating = False
     if url is not None:
         msgBox = QMessageBox()
         icon = QIcon(resource_path('./assets/trackerIcon.xpm'))
         msgBox.setWindowIcon(icon)
         msgBox.setIcon(QMessageBox.Question)
-        msgBox.setText("TrackerOverlay "+newversion+" is available.\nDo you want to update?\nTrackerOverlay will restart if you proceed.")
+        msgBox.setText("TrackerOverlay "+newversion+" is available.\nDo you want to update?")
         msgBox.setWindowTitle("Update available")
         msgBox.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
         r = msgBox.exec()
         if r == QMessageBox.Ok:
-            downloadNewVersion(url, updated)
-
-    initCDragon()
-    screen_resolution = app.desktop().screenGeometry()
-    width, height = screen_resolution.width(), screen_resolution.height()
-    setterWindow = SetterWindow(width, height)
-    window = InformationWindow(width, height)
-    startThreads()
+            #downloadNewVersion(url, updated)
+            download = DownLoadWidget(url,updated, newversion,notes)
+            download.start()
+            updating = True
+    if not updating:
+        initCDragon()
+        screen_resolution = app.desktop().screenGeometry()
+        width, height = screen_resolution.width(), screen_resolution.height()
+        setterWindow = SetterWindow(width, height)
+        window = InformationWindow(width, height)
+        startThreads()
     app.exec_()
