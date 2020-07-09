@@ -7,7 +7,7 @@ from PyQt5 import QtCore
 from PyQt5.QtGui import QFont, QIcon, QColor
 from PyQt5.QtWidgets import QApplication, QLabel, QDialog, QSystemTrayIcon, QMenu, QDesktopWidget, \
     QGraphicsDropShadowEffect, QPushButton, QGridLayout, QFrame, QMessageBox, QProgressBar, QHBoxLayout, QWidget, \
-    QVBoxLayout
+    QVBoxLayout, QScrollArea
 from PyQt5.QtCore import Qt, pyqtSignal, QObject, QTimer, QThread
 import paho.mqtt.client as mqtt
 import threading
@@ -646,8 +646,6 @@ class InformationWindow(QDialog):
 
         self.postxtfilepath = os.path.join(appdatadir.overlaydir, "pos.txt")
 
-        myappid = 'summonerTrackerOverlay'  # arbitrary string
-        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
 
         trayIcon.setContextMenu(menu)
         trayIcon.show()
@@ -1762,6 +1760,21 @@ def outdated():
         # https://github.com/CodeIsJustLikeMagic/SummonerTrackerOverlay/releases/latest
         ret = j.get('assets')[0].get('browser_download_url')
         return ret, tagName, j.get('body')
+
+
+class ScrollLabel(QScrollArea):
+    def __init__(self, *args, **kwargs):
+        QScrollArea.__init__(self, *args, **kwargs)
+        self.setWidgetResizable(True)
+        content = QWidget(self)
+        self.setWidget(content)
+        lay = QVBoxLayout(content)
+        self.label = QLabel(content)
+        self.label.setAlignment(Qt.AlignLeft | Qt.AlignTop)
+        self.label.setWordWrap(True)
+        lay.addWidget(self.label)
+    def setText(self, text):
+        self.label.setText(text)
 class DownLoadWidget(QWidget):
     def __init__(self, downloadUrl, filepath, newversion, notes):
         super().__init__()
@@ -1772,14 +1785,19 @@ class DownLoadWidget(QWidget):
         self.label = QLabel("Update to TrackerOverlay "+newversion +"\n")
         self.label.setStyleSheet('font-size: 10pt')
         layout.addWidget(self.label)
-        self.notes = QLabel(notes)
+        self.notes = ScrollLabel()
+        self.notes.setText(notes)
+        self.resize(100,300)
         layout.addWidget(self.notes)
         self.progressBar = QProgressBar(self,minimumWidth = 400)
         self.progressBar.setValue(0)
         layout.addWidget(self.progressBar)
-        self.show()
         self.url = downloadUrl
         self.filepath = filepath
+        centerPoint = QDesktopWidget().availableGeometry().center()
+        self.move(centerPoint)
+
+        self.show()
     def start(self):
         filesize = requests.get(url, stream=True).headers['Content-Length']
         fileobject = open(self.filepath, 'wb')
@@ -1875,6 +1893,8 @@ if __name__ == '__main__':
     )
     logging.debug('m0 overlay started! (0/4 startup, 0/5 entire run)')
     app = QApplication([])
+    myappid = 'summonerTrackerOverlay'  # arbitrary string
+    ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
     url, updated, newversion, notes = lookForUpdate()
     updating = False
     if url is not None:
