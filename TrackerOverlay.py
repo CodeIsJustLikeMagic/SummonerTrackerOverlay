@@ -6,8 +6,8 @@ from PIL import Image, ImageEnhance, ImageDraw
 from PyQt5 import QtCore
 from PyQt5.QtGui import QFont, QIcon, QColor
 from PyQt5.QtWidgets import QApplication, QLabel, QDialog, QSystemTrayIcon, QMenu, QDesktopWidget, \
-    QGraphicsDropShadowEffect, QPushButton, QGridLayout, QFrame, QMessageBox, QProgressBar, QHBoxLayout, QWidget, \
-    QVBoxLayout, QScrollArea
+    QGraphicsDropShadowEffect, QPushButton, QGridLayout, QFrame, QMessageBox, QProgressBar, QWidget, \
+    QVBoxLayout, QScrollArea, QWidgetAction
 from PyQt5.QtCore import Qt, pyqtSignal, QObject, QTimer, QThread
 import paho.mqtt.client as mqtt
 import threading
@@ -606,6 +606,11 @@ class InformationWindow(QDialog):
         trayIcon = QSystemTrayIcon(icon, self)
         self.setWindowIcon(icon)
         menu = QMenu()
+        global version
+        l = QLabel('Version '+version)
+        label_action = QWidgetAction(self)
+        label_action.setDefaultWidget(l)
+        menu.addAction(label_action)
         openHotKeyFileAction = menu.addAction("Set Hotkey")
         global hotkeyFilePath
         openHotKeyFileAction.triggered.connect(self.setHotkey)
@@ -1833,7 +1838,7 @@ class downloadThread(QThread):
         except Exception as e:
             print(e)
 
-version = 'v5.4.3'
+version = 'v5.4.5'
 
 if __name__ == '__main__':
     try:
