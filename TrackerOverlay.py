@@ -1803,7 +1803,11 @@ class DownLoadWidget(QWidget):
         self.progressBar.setValue(value)
         if value == 100:
             logging.debug('update downloaded updated version')
-            os.startfile(self.filepath)
+            try:
+                os.startfile(self.filepath)
+                logging.debug('update started updated version')
+            except Exception as e:
+                logging.debug('update error while trying to start updated version '+ str(e))
             self.close()
 
 #################################################################
