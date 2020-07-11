@@ -1803,12 +1803,20 @@ class DownLoadWidget(QWidget):
         self.progressBar.setValue(value)
         if value == 100:
             logging.debug('update downloaded updated version')
-            try:
-                os.startfile(self.filepath)
-                logging.debug('update started updated version')
-            except Exception as e:
-                logging.debug('update error while trying to start updated version '+ str(e))
+            self.startUpdatedVersion();
+            time.sleep(0.5)
+            self.startUpdatedVersion();
+
+    def startUpdatedVersion(self):
+        try:
+            time.sleep(0.5)
+            os.startfile(self.filepath)
+            logging.debug('update started updated version')
             self.close()
+            sys.exit()
+        except Exception as e:
+            logging.debug('update error while trying to start updated version ' + str(e))
+
 
 #################################################################
 #Download thread
@@ -1842,7 +1850,7 @@ class downloadThread(QThread):
         except Exception as e:
             print(e)
 
-version = 'v5.4.5'
+version = 'v5.4.6'
 
 if __name__ == '__main__':
     try:
