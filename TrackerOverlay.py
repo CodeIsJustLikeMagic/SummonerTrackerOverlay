@@ -1090,9 +1090,10 @@ eventnum = -1
 
 def loadLevelsAndItems():
     global eventnum
+    global port
     logging.debug('gc* ll0 attempting to load levels (0/1)')
     try:
-        r = requests.get("https://127.0.0.1:2999/liveclientdata/allgamedata", verify=False)
+        r = requests.get("https://127.0.0.1:"+port+"/liveclientdata/allgamedata", verify=False)
     except Exception as e:
         logging.debug(str(e))
     j = json.loads(r.content)
@@ -1126,15 +1127,16 @@ myteam = "empty"
 
 
 def loadWithApi():
+    global port
     logging.debug('gc3 loading with api')
     # api_connection_data = lcu.connect("D:/Program/RiotGames/LeagueOfLegends")
     try:
-        r = requests.get("https://127.0.0.1:2999/liveclientdata/playerlist", verify=False)
+        r = requests.get("https://127.0.0.1:"+port+"/liveclientdata/playerlist", verify=False)
     except Exception as e:
         return None, None
-    activeplayer = requests.get("https://127.0.0.1:2999/liveclientdata/activeplayername", verify=False)
+    activeplayer = requests.get("https://127.0.0.1:"+port+"/liveclientdata/activeplayername", verify=False)
     activeplayer = json.loads(activeplayer.content)
-    status = requests.get("https://127.0.0.1:2999/liveclientdata/gamestats", verify=False)
+    status = requests.get("https://127.0.0.1:"+port+"/liveclientdata/gamestats", verify=False)
     gametype = json.loads(status.content).get("gameMode")
     logging.debug('gc4 activeplayer ' + activeplayer)
     j = json.loads(r.content)
@@ -1302,10 +1304,12 @@ tries = 1
 
 def testConnection(s):
     global activeGameFound
+    global port
+    port = findPort()
     logging.debug('gc1 trying to find game/ updating time and levels. game found :' + str(activeGameFound))
     global tries
     try:
-        r = s.get("https://127.0.0.1:2999/liveclientdata/gamestats", verify=False)
+        r = s.get("https://127.0.0.1:"+port+"/liveclientdata/gamestats", verify=False)
         if r.status_code != 200:
             return
         if activeGameFound is False:
@@ -1735,7 +1739,7 @@ def lookForUpdate():
             return None, None, None, None
 def delete(updated):
     time.sleep(1)
-    os.unlink(updated)
+    #os.unlink(updated)
     logging.debug('update erased unesesarry updated version')
 def outdated():
     try:
@@ -1849,10 +1853,28 @@ class downloadThread(QThread):
 
         except Exception as e:
             print(e)
-
-version = 'v5.4.6'
-
+import psutil
+def findProcessID():
+    for process in psutil.process_iter():
+        try:
+            if process.name() == 'League of Legends.exe':
+                return process
+        except:
+            pass
+def findPort():
+    try:
+        p = findProcessID()
+        for x in p.connections():
+            if x.status == psutil.CONN_LISTEN:
+                a = x.laddr
+                return(str(a[1]))
+        return (str(2999))
+    except:
+        return(str(2999))
+version = 'v5.5.0'
+port = '62441'
 if __name__ == '__main__':
+    findPort()
     try:
         os.mkdir(appdatadir.overlaydir)
     except FileExistsError:
