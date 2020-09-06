@@ -1739,7 +1739,7 @@ def lookForUpdate():
             return None, None, None, None
 def delete(updated):
     time.sleep(1)
-    #os.unlink(updated)
+    os.unlink(updated)
     logging.debug('update erased unesesarry updated version')
 def outdated():
     try:
@@ -1872,7 +1872,7 @@ def findPort():
     except:
         return(str(2999))
 version = 'v5.5.0'
-port = '62441'
+port = '2999'
 if __name__ == '__main__':
     findPort()
     try:
