@@ -1,6 +1,6 @@
 # TrackerOverlay.py
-from datetime import datetime
-
+import time
+z = time.time()
 from PIL.ImageDraw import ImageDraw
 from PIL import Image, ImageEnhance, ImageDraw
 from PyQt5 import QtCore
@@ -15,7 +15,7 @@ from numpy import unicode
 import os, sys
 import requests
 import json
-import time
+
 from datetime import datetime
 from datetime import date
 import ctypes
@@ -23,6 +23,8 @@ import keyboard
 import re
 import logging
 import shutil
+
+print('imorting modules took', time.time()-z)
 
 class Communicate(QObject):
     text = pyqtSignal(str)
@@ -57,6 +59,7 @@ def resource_path(relative_path):
 
 class SetterWindow(QDialog):
     def __init__(self, width, height):
+        t = time.time()
         super().__init__()
         self.setWindowFlags(Qt.WindowStaysOnTopHint | Qt.FramelessWindowHint)
         self.setAttribute(Qt.WA_TranslucentBackground)
@@ -174,7 +177,6 @@ class SetterWindow(QDialog):
             btn.installEventFilter(self)
         for btn in self.ultButtons:
             btn.installEventFilter(self)
-
         self.postxtfilepath = os.path.join(appdatadir.overlaydir, "pos2.txt")
         self.a = c
         c.setterChampion.connect(lambda index, val: self.setchampionlabel(index, val))
@@ -192,12 +194,12 @@ class SetterWindow(QDialog):
         c.toogleShow.connect(lambda: self.toogleShow())
         c.updateTimers.connect(self.updateTimers)
         self.lastAction = time.time()
-
         self.move(width * 0.85, height * 0.2)
 
-        self.show()
-        try:
+        self.show() # this takes long
 
+        z = time.time()
+        try:#reading doesnt take long
             with open(self.postxtfilepath) as f:
                 pos = f.read()
                 pos = pos.split(' ')
@@ -212,6 +214,7 @@ class SetterWindow(QDialog):
         self.cdtimer.timeout.connect(self.updateTimers)
         self.cdtimer.setInterval(1000)
         self.cdtimer.start()
+        print('setter window took',time.time()-t)
 
     def updateTimers(self):
         for btn in self.spellButtons:
@@ -1032,6 +1035,8 @@ dataholder = Dataholder()
 def getItemScdr(summonerspell):
     items = dataholder.getItem(summonerspell.champion)
     scdr = 0.0
+    if items is None:
+        return scdr
     for item in items:
         name = item.get("displayName")
         r = spellDatabase.get(name)
@@ -1046,14 +1051,17 @@ def getItemUcdr(ultspell):
     ucdr = 0.0
     # basecdr
     s = []
-    for item in items:
-        id = item.get('itemID')
-        cd = dataholder.getItemCD(id)
-        if cd is not None:
-            s.append(id)
-            cd = cd.get('base')
+    if items is None:
+        pass
+    else:
+        for item in items:
+            id = item.get('itemID')
+            cd = dataholder.getItemCD(id)
             if cd is not None:
-                ucdr = ucdr + cd
+                s.append(id)
+                cd = cd.get('base')
+                if cd is not None:
+                    ucdr = ucdr + cd
     # qunique
     itemset = set(s)
     for id in itemset:
@@ -1232,7 +1240,7 @@ class Mqttclient():
     def connect(self, topicsuffix, clientIdSuffix):
         if topicsuffix is None:
             return
-        broker_address = "mqtt.eclipse.org"
+        broker_address = "broker.hivemq.com"#"mqtt.eclipse.org"
         self.clientID = "observer" + clientIdSuffix
         self.topic = "SpellTracker2/Match" + topicsuffix
         client = mqtt.Client(self.clientID)
@@ -1310,6 +1318,7 @@ def testConnection(s):
     global tries
     try:
         r = s.get("https://127.0.0.1:"+port+"/liveclientdata/gamestats", verify=False)
+        print('looked for game', r.status_code, time.time())
         if r.status_code != 200:
             return
         if activeGameFound is False:
@@ -1331,6 +1340,7 @@ def testConnection(s):
         loadLevelsAndItems()
         return
     except Exception as e:
+        print('looked for game, failed', time.time())
         logging.debug('gc2 encountered (network)error in gamecheck' + str(e))
         if tries == 3:
             c.status.emit('')
@@ -1356,6 +1366,7 @@ def gameCheck(s):
 
 def startThreads():
     logging.debug('m4 starting threads. looking for game')
+    print('looking for game now', time.time())
     s = requests.Session()
     t = threading.Thread(name='activeGameSearch', target=lambda: gameCheck(s))
     t.setDaemon(True)
@@ -1405,18 +1416,15 @@ def loadHotkey():
         pass
     keyboard.add_hotkey(keys, reactToHotKey)
 
-
 def reactToHotKey():
     global activeGameFound
     if activeGameFound:
         c.hotkeyClicked.emit()
 
-
 class AppDataDir():
     def __init__(self):
         self.overlaydir = os.path.join(os.getenv('APPDATA'), "SummonerTrackerOverlay")
         self.jsondir = os.path.join(self.overlaydir, "CDragon")
-
 
 appdatadir = AppDataDir()
 
@@ -1661,7 +1669,7 @@ def updateItems():
     except Exception as e:
         return
     j = json.loads(r.content)
-    p = re.compile('([0-9]*)% Cooldown Reduction')
+    p = re.compile('([0-9]*)% Ability Haste')
     dict = {}
     i = {}
     for item in j:
@@ -1739,7 +1747,7 @@ def lookForUpdate():
             return None, None, None, None
 def delete(updated):
     time.sleep(1)
-    os.unlink(updated)
+    #os.unlink(updated)
     logging.debug('update erased unesesarry updated version')
 def outdated():
     try:
@@ -1874,7 +1882,10 @@ def findPort():
 version = 'v5.5.0'
 port = '2999'
 if __name__ == '__main__':
-    findPort()
+    logging.debug('m0 overlay started, looking for port and files! (0/5 startup, 0/5 entire run)')
+    t = time.time()
+    s = t
+    print('m0', t)
     try:
         os.mkdir(appdatadir.overlaydir)
     except FileExistsError:
@@ -1885,8 +1896,10 @@ if __name__ == '__main__':
         pass
     debugpath = os.path.join(appdatadir.overlaydir, "debug.log")
     logStartPath = os.path.join(appdatadir.overlaydir, "startLogdate.txt")
-    try:
+    z = time.time()
+    try:# this is quick
         with open(logStartPath) as f:
+
             logStartDate = f.read()
             if logStartDate == '':
                 saveCurrentLogDate(logStartPath)
@@ -1907,7 +1920,6 @@ if __name__ == '__main__':
         f.write('')
         f.close()
         updateCDragon()
-
     logging.basicConfig(
         level=logging.DEBUG,
         format="%(asctime)s [%(levelname)s] %(message)s",
@@ -1916,13 +1928,17 @@ if __name__ == '__main__':
             logging.StreamHandler()
         ]
     )
-    logging.debug('m0 overlay started! (0/4 startup, 0/5 entire run)')
+
+    logging.debug('m1 Looking for Update')
+    print('m1 port anf files took', time.time()-t)
+    t = time.time()
     app = QApplication([])
     myappid = 'summonerTrackerOverlay'  # arbitrary string
     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
     url, updated, newversion, notes = lookForUpdate()
     updating = False
     if url is not None:
+        logging.debug('m? starting update window')
         msgBox = QMessageBox()
         icon = QIcon(resource_path('./assets/trackerIcon.xpm'))
         msgBox.setWindowIcon(icon)
@@ -1936,11 +1952,17 @@ if __name__ == '__main__':
             download = DownLoadWidget(url,updated, newversion,notes)
             download.start()
             updating = True
+    print('m2 update took', time.time()-t)
+    t = time.time()
+    logging.debug('m2 starting windows')
     if not updating:
         initCDragon()
+
         screen_resolution = app.desktop().screenGeometry()
         width, height = screen_resolution.width(), screen_resolution.height()
         setterWindow = SetterWindow(width, height)
         window = InformationWindow(width, height)
+        print('creating windows took', time.time()-t)
+        print('all in all', time.time()-s)
         startThreads()
     app.exec_()

@@ -1,0 +1,12 @@
+WARNING:root:For Steam Games ensure that there is steam_appid.txt file in \%SteamFolder\%\steamapps\common\\%GameName\% with correct appid! You can get app_id here https://steamdb.info/search/
+WARNING:root:For Steam Games ensure that there is steam_appid.txt file in \%SteamFolder\%\steamapps\common\\%GameName\% with correct appid! You can get app_id here https://steamdb.info/search/
+WARNING:root:For Steam Games ensure that there is steam_appid.txt file in \%SteamFolder\%\steamapps\common\\%GameName\% with correct appid! You can get app_id here https://steamdb.info/search/
+INFO:__main__:Hi from python OverlayLogHandler 0
+INFO:__main__:Hi from python OverlayLogHandler 1
+INFO:__main__:Hi from python OverlayLogHandler 2
+INFO:__main__:Hi from python OverlayLogHandler 3
+INFO:__main__:Hi from python OverlayLogHandler 4
+INFO:__main__:Hi from python OverlayLogHandler 5
+INFO:__main__:Hi from python OverlayLogHandler 6
+WARNING:root:For Steam Games ensure that there is steam_appid.txt file in \%SteamFolder\%\steamapps\common\\%GameName\% with correct appid! You can get app_id here https://steamdb.info/search/
+WARNING:root:For Steam Games ensure that there is steam_appid.txt file in \%SteamFolder\%\steamapps\common\\%GameName\% with correct appid! You can get app_id here https://steamdb.info/search/
