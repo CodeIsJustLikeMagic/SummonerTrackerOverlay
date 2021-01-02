@@ -1,0 +1,5 @@
+clouddrakeandabilityhaste 65.45 ult cdr yasuo
+
+with bootsoflucidity flash 272.73
+			heal 218.18
+			ult 53.33

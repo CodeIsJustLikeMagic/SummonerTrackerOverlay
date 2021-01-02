@@ -1732,7 +1732,7 @@ def lookForUpdate():
             return None, None, None, None
 def delete(updated):
     time.sleep(1)
-    #os.unlink(updated)
+    os.unlink(updated) #!!!! build add this again
     logging.debug('update erased unesesarry updated version')
 def outdated():
     try:
@@ -1864,7 +1864,7 @@ def findPort():
         return (str(2999))
     except:
         return(str(2999))
-version = 'v5.5.0'
+version = 'v5.6.0' #!!!!!when you build
 port = '2999'
 if __name__ == '__main__':
     logging.debug('m0 overlay started, looking for port and files! (0/5 startup, 0/5 entire run)')

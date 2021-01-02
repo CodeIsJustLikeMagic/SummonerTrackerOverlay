@@ -236,7 +236,7 @@
       <workItem from="1604089390122" duration="1676000" />
       <workItem from="1604149850528" duration="8356000" />
       <workItem from="1607702278872" duration="281000" />
-      <workItem from="1609539993492" duration="14347000" />
+      <workItem from="1609539993492" duration="16348000" />
     </task>
     <servers />
   </component>
@@ -257,25 +257,25 @@
     </option>
   </component>
   <component name="WindowStateProjectService">
-    <state width="1877" height="175" key="GridCell.Tab.0.bottom" timestamp="1609554570668">
+    <state width="1877" height="2" key="GridCell.Tab.0.bottom" timestamp="1609556277022">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
-    <state width="1877" height="175" key="GridCell.Tab.0.bottom/0.0.1920.1040/1920.337.1920.1040@0.0.1920.1040" timestamp="1609554570668" />
+    <state width="1877" height="2" key="GridCell.Tab.0.bottom/0.0.1920.1040/1920.337.1920.1040@0.0.1920.1040" timestamp="1609556277022" />
     <state width="1877" height="131" key="GridCell.Tab.0.bottom/0.0.1920.1040/1920.337.1920.1040@1920.337.1920.1040" timestamp="1609546443683" />
-    <state width="1877" height="175" key="GridCell.Tab.0.center" timestamp="1609554570668">
+    <state width="1877" height="2" key="GridCell.Tab.0.center" timestamp="1609556277022">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
-    <state width="1877" height="175" key="GridCell.Tab.0.center/0.0.1920.1040/1920.337.1920.1040@0.0.1920.1040" timestamp="1609554570668" />
+    <state width="1877" height="2" key="GridCell.Tab.0.center/0.0.1920.1040/1920.337.1920.1040@0.0.1920.1040" timestamp="1609556277022" />
     <state width="1877" height="131" key="GridCell.Tab.0.center/0.0.1920.1040/1920.337.1920.1040@1920.337.1920.1040" timestamp="1609546443683" />
-    <state width="1877" height="175" key="GridCell.Tab.0.left" timestamp="1609554570668">
+    <state width="1877" height="2" key="GridCell.Tab.0.left" timestamp="1609556277022">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
-    <state width="1877" height="175" key="GridCell.Tab.0.left/0.0.1920.1040/1920.337.1920.1040@0.0.1920.1040" timestamp="1609554570668" />
+    <state width="1877" height="2" key="GridCell.Tab.0.left/0.0.1920.1040/1920.337.1920.1040@0.0.1920.1040" timestamp="1609556277022" />
     <state width="1877" height="131" key="GridCell.Tab.0.left/0.0.1920.1040/1920.337.1920.1040@1920.337.1920.1040" timestamp="1609546443683" />
-    <state width="1877" height="175" key="GridCell.Tab.0.right" timestamp="1609554570668">
+    <state width="1877" height="2" key="GridCell.Tab.0.right" timestamp="1609556277022">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>
-    <state width="1877" height="175" key="GridCell.Tab.0.right/0.0.1920.1040/1920.337.1920.1040@0.0.1920.1040" timestamp="1609554570668" />
+    <state width="1877" height="2" key="GridCell.Tab.0.right/0.0.1920.1040/1920.337.1920.1040@0.0.1920.1040" timestamp="1609556277022" />
     <state width="1877" height="131" key="GridCell.Tab.0.right/0.0.1920.1040/1920.337.1920.1040@1920.337.1920.1040" timestamp="1609546443683" />
     <state width="1877" height="175" key="GridCell.Tab.1.bottom" timestamp="1609554570668">
       <screen x="0" y="0" width="1920" height="1040" />
@@ -316,11 +316,6 @@
       <breakpoints>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/TrackerOverlay.py</url>
-          <line>1671</line>
-          <option name="timeStamp" value="5" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/TrackerOverlay.py</url>
           <line>1050</line>
           <option name="timeStamp" value="15" />
         </line-breakpoint>
@@ -345,7 +340,7 @@
     </breakpoint-manager>
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
-    <SUITE FILE_PATH="coverage/SummonerTrackerClientP$TrackerOverlay__1_.coverage" NAME="TrackerOverlay (1) Coverage Results" MODIFIED="1609554570661" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/SummonerTrackerClientP$TrackerOverlay__1_.coverage" NAME="TrackerOverlay (1) Coverage Results" MODIFIED="1609556277009" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/SummonerTrackerClientP$TrackerFullscreen.coverage" NAME="TrackerFullscreen Coverage Results" MODIFIED="1609540060084" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/SummonerTrackerClientP$TrackerOverlay.coverage" NAME="TrackerOverlay Coverage Results" MODIFIED="1604156127694" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
   </component>
