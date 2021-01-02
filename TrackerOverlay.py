@@ -771,30 +771,34 @@ class Spell():
 def calculateCD(spellObject):
     if spellObject is None:
         return -1
-    gtcdr = dataholder.getgameTypeCdr()
     if isinstance(spellObject, UltSpell):
         lvl = str(dataholder.getLvL(spellObject.champion))
         cd = spellObject.cddir.get(lvl)
-        cdr = getItemUcdr(spellObject)
-
-        if cdr >= 40:
-            cdr = 40
-        cdr = cdr + dataholder.getclouddrakes()
-        cdr = cdr + spellObject.cosmicInsight
+        #fist calculate clouddrakes
+        cdr = dataholder.getclouddrakes()
         cd = cd * (1 - (cdr / 100.0))
+        #then abilityhaste though items
+        cdr = getItemUcdr(spellObject)
+        cd = cd * (1 - (cdr / 100.0))
+
         logging.debug('st? calculate ultspell cd ' + str(cd))
         return cd
     else:
+        #cd of the spell
         cd = spellObject.cd
         if spellObject.spellname == 'tp':
             cd = tpCD(spellObject)
-        if gtcdr == spellDatabase.get("ARAM"):
-            cd = cd * (1.0 - (spellObject.cosmicInsight / 100.0))
-            cdr = gtcdr + getItemScdr(spellObject)
-            cd = cd * (1.0 - ((gtcdr + getItemScdr(spellObject)) / 100.0))
+
+        gametypecdr = spellObject.gametypecdr + addBOOTS(spellObject)
+
+        haste = 0
+        if not gametypecdr:
+            haste = 0
         else:
-            cd = cd * (1.0 - ((getItemScdr(spellObject) + spellObject.cosmicInsight) / 100.0))
-        logging.debug('st? calculate summonerspell cd ' + str(cd))
+            haste = spellDatabase.get(gametypecdr)
+
+        cdr = calcCDR(haste)
+        cd = cd * (1 - (cdr / 100.0))
         return cd
 
 
@@ -815,9 +819,9 @@ class TrackEntry():
 
 
 class SummonerSpell():
-    def __init__(self, cham, spellname, mqttdesc, cosmicInsight):
+    def __init__(self, cham, spellname, mqttdesc, gametypecdr):
         self.champion = cham
-        self.cosmicInsight = cosmicInsight
+        self.gametypecdr = gametypecdr
         if spellDatabase.get(spellname) is None:
             logging.debug('     gc6 ssError spell ' + spellname + ' doesnt exist in database')
         self.spellname = spellDatabase.get(spellname).shortName
@@ -904,7 +908,7 @@ class Dataholder():
         with datalock:
             self.allitems = dict
 
-    def getItemCD(self, id):
+    def getItemHaste(self, id):
         with datalock:
             ret = self.allitems.get(str(id))
         return ret
@@ -922,7 +926,7 @@ class Dataholder():
         with datalock:
             self.gtcdr = cdr
 
-    def getgameTypeCdr(self):
+    def getgameTypeHaste(self):
         with datalock:
             ret = self.gtcdr
         return ret
@@ -1031,53 +1035,33 @@ def sortTracks():  # called while thread is locked
 
 dataholder = Dataholder()
 
-
-def getItemScdr(summonerspell):
+#get summonerspellcdr
+def addBOOTS(summonerspell):
     items = dataholder.getItem(summonerspell.champion)
-    scdr = 0.0
     if items is None:
-        return scdr
+        return ""
     for item in items:
         name = item.get("displayName")
-        r = spellDatabase.get(name)
-        if r is None:
-            r = 0.0
-        scdr = scdr + r
-    return scdr
+        if name == "Ionian Boots of Lucidity":
+            return "BOOTS"
+    return ""
 
-
+#get ult cdr
 def getItemUcdr(ultspell):
     items = dataholder.getItem(ultspell.champion)
-    ucdr = 0.0
     # basecdr
-    s = []
-    if items is None:
-        pass
-    else:
-        for item in items:
-            id = item.get('itemID')
-            cd = dataholder.getItemCD(id)
-            if cd is not None:
-                s.append(id)
-                cd = cd.get('base')
-                if cd is not None:
-                    ucdr = ucdr + cd
-    # qunique
-    itemset = set(s)
-    for id in itemset:
-        cd = dataholder.getItemCD(id)
-        cd = cd.get('unique')
-        if cd is not None:
-            ucdr = ucdr + cd
-    for id in itemset:
-        cd = dataholder.getItemCD(id)
-        cd = cd.get('haste')
-        if cd is not None:
-            ucdr = ucdr + cd
-            break
-
+    totalabilityhaste = 0
+    for item in items:
+        id = item.get('itemID')
+        haste = dataholder.getItemHaste(id)
+        if haste is not None:
+            totalabilityhaste = totalabilityhaste + int(haste)
+    ucdr = calcCDR(totalabilityhaste)
     return ucdr
 
+def calcCDR(haste):
+    cd = 100 * (1 - (1 /( 1+(haste/100))))
+    return cd
 
 def updateAllUlts():
     allspells = {}
@@ -1146,6 +1130,8 @@ def loadWithApi():
     activeplayer = json.loads(activeplayer.content)
     status = requests.get("https://127.0.0.1:"+port+"/liveclientdata/gamestats", verify=False)
     gametype = json.loads(status.content).get("gameMode")
+    if gametype != "ARAM":
+        gametype = ""
     logging.debug('gc4 activeplayer ' + activeplayer)
     j = json.loads(r.content)
     li = []
@@ -1160,10 +1146,6 @@ def loadWithApi():
     index = 0
     ultindex = 10
     dataholder.clearButtons()
-    gtcdr = spellDatabase.get(gametype)
-    if gtcdr is None:
-        runecdr = 0.0
-    dataholder.setgameTypeCdr(gtcdr)
     for player in j:
         if player.get("team", "") != myteam:
             name = player.get("summonerName", "")
@@ -1177,17 +1159,19 @@ def loadWithApi():
                 sp2 = sp1
                 sp1 = temp
 
-            runecdr = 0.0
+            sspellcdrType = gametype
             runes = player.get('runes')
+            runecdr = 0.0 # currently not used. No rune cdr on ult
             for rune in runes:
                 rune = runes.get(rune)
                 name = rune.get("displayName")
-                cdr = spellDatabase.get(name)
-                if cdr is not None:
-                    runecdr = runecdr + cdr
+                if name == "Inspiration":
+                    sspellcdrType = sspellcdrType + "COS"
+
+            print(name, sspellcdrType)
             logging.debug(' gc6_0 enemy ' + name + ' ' + champ + ' ' + sp1)
             id = champ + 'Spell1'
-            dataholder.addSpell(id, SummonerSpell(champ, sp1, index, runecdr))
+            dataholder.addSpell(id, SummonerSpell(champ, sp1, index, sspellcdrType))
             dataholder.addButton(id, index)
             temp = c
             c.settSpell.emit(index, sp1, id)
@@ -1195,7 +1179,7 @@ def loadWithApi():
 
             id = champ + 'Spell2'
             logging.debug(' gc6_1 enemy ' + name + ' ' + champ + ' ' + sp2)
-            dataholder.addSpell(id, SummonerSpell(champ, sp2, index, runecdr))
+            dataholder.addSpell(id, SummonerSpell(champ, sp2, index, sspellcdrType))
             dataholder.addButton(id, index)
             c.settSpell.emit(index, sp2, id)
             index = index + 1
@@ -1465,9 +1449,15 @@ spellDatabase = {
     'Resuscitate': Spell('rev', 100, 'Clarity'),
     'Warp': Spell('warp', 15, 'Teleport'),
 
-    'Ionial Boots of Lucidity': 10.0,
-    'ARAM': 40.0,
-    'Inspiration': 5.0
+    'ARAM': 70.0,
+    'ARAMCOS' : 85.0,
+    'ARAMBOOTS': 101.07,
+    'ARAMCOSBOOTS': 122.4,
+
+    '': 0.0,
+    'COS': 15.0,
+    'BOOTS': 10.0,
+    'COSBOOTS': 28.42,
 }
 
 
@@ -1641,6 +1631,8 @@ def readSummonerSpellsFromFile():
             for spell in data:
                 name = spell.get('name')
                 cd = spell.get('cooldown')
+                if not name:
+                    continue
                 spell = spellDatabase.get(name)
                 if spell is None:
                     spell = Spell(name, cd, name)
@@ -1669,29 +1661,22 @@ def updateItems():
     except Exception as e:
         return
     j = json.loads(r.content)
-    p = re.compile('([0-9]*)% Ability Haste')
+    p = re.compile('<attention> \d+</attention> Ability Haste')
+    num = re.compile('\d+')
     dict = {}
     i = {}
     for item in j:
         itemid = item.get('id')
         for c in item.get('categories'):
-            if c == 'CooldownReduction':
+            if c == 'AbilityHaste' or c == 'CooldownReduction':
                 desc = item.get('description')
-                l = re.split('UNIQUE', desc, maxsplit=1)
-                i = {}
-                for desc in l:
-                    cdlist = p.findall(desc)
-                    if len(cdlist) > 0:
-                        cd = 0
-                        for c in cdlist:
-                            cd = cd + int(c)
-                        if re.search('Haste', desc) is not None:
-                            i['haste'] = cd
-                        elif re.search('UNIQUE', desc) is not None:
-                            i['unique'] = cd
-                        else:
-                            i['base'] = cd
-                dict[itemid] = i
+                haste = p.findall(desc)
+                if not haste:
+                    haste = 0
+                else:
+                    haste = num.findall(haste[0])[0]
+
+                dict[itemid] = haste
     filepath = os.path.join(appdatadir.jsondir, "items.json")
     with open(filepath, 'w') as outfile:
         json.dump(dict, outfile)
