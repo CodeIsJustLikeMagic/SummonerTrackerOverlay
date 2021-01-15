@@ -27,14 +27,15 @@ This Tracker DOES NOT track spells automatically. You have to start the timers y
 
 lol Patches and cdr
 -------------
-* summoner spell cooldowns, item cdr, and ult cooldowns get loaded from [Community Dragon](https://www.communitydragon.org/) (a centralized League of Legends game data and asset provider run by the community)
+* summoner spell cooldowns, item ability haste, and ult cooldowns get loaded from [Community Dragon](https://www.communitydragon.org/) (a centralized League of Legends game data and asset provider run by the community)
   * All cooldows get updated once community dragen is up to date with a lol patch
   * The data gets saved in %Appdata%\SummonerTrackerOverlay\CDragon and reloaded every 7 days
-* summoner spell cdr from the aram aura, runes and boots is taken into account
-  * I can only get the keystone, and the name of the primary tree and the secondary tree with the Live Game Api. So I'm currently assuming that whenever a player has the "Inspiration" Tree, he is running Cosmic Insight.
+  
 * teleport cooldown gets calculated according to the level of the champion.
-* **NEW: ulimate cooldows are loaded from CDragon and set according to Champion and Level. Items and Inspiration Tree are used to calculate cdr.**
-  * there are more runes, could drakes and blue buffs that also influence the cdr. They are currently not calculated though.
+* ulimate cooldows are loaded from CDragon and set according to Champion and Level.
+* uses ability haste from items and cdr from cloud drakes for ultimate (no blue buff, small rune or mythic passive)
+* uses summoner spell haste from aram aura, insiration tree and boots of lucidity
+   * I can only get the keystone, and the name of the primary tree and the secondary tree with the Live Game Api. So I'm currently assuming that whenever a player has the "Inspiration" Tree, he is running Cosmic Insight.
 
 How it works
 ------------
