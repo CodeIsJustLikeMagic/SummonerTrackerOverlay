@@ -40,7 +40,6 @@ from PyQt5.QtWidgets import QApplication, QLabel, QDialog, QSystemTrayIcon, QMen
 from PyQt5.QtCore import Qt, pyqtSignal, QObject, QTimer, QThread
 import paho.mqtt.client as mqtt
 import threading
-from numpy import unicode
 
 import requests
 import json
@@ -1225,9 +1224,9 @@ def loadWithApi():
             c.setterChampion.emit(ultindex - 10, champ)
             ultindex = ultindex + 1
             logging.debug(' gc6_2 enemy done')
-    topic = str(hashNames(li))
+    topic = hashNames(li)
     logging.debug('gc7 sucessfull loading with api')
-    return topic, str(java_string_hashcode(activeplayer))
+    return topic, hash(activeplayer)
 
 
 def on_message(client, userdata, message):
@@ -1296,29 +1295,19 @@ class Mqttclient():
 
 
 mqttclient = Mqttclient()
-
-
-def java_string_hashcode(s):
-    """Mimic Java's hashCode in python 2"""
-    try:
-        s = unicode(s)
-    except:
-        try:
-            s = unicode(s.decode('utf8'))
-        except:
-            raise Exception("Please enter a unicode type string or utf8 bytestring.")
-    h = 0
-    for c in s:
-        h = int((((31 * h + ord(c)) ^ 0x80000000) & 0xFFFFFFFF) - 0x80000000)
+import hashlib
+def hash(s):
+    h = hashlib.md5(s.encode('utf-8')).hexdigest()
+    #print(h)
     return h
-
 
 def hashNames(li):
     li = sorted(li)
     con = ''
     for e in li:
         con = con + e
-    h = java_string_hashcode(con)
+    #print(con)
+    h = hash(con)
     return h
 
 
@@ -1334,7 +1323,7 @@ def testConnection(s):
     global tries
     try:
         r = s.get("https://127.0.0.1:"+port+"/liveclientdata/gamestats", verify=False)
-        print('looked for game', r.status_code, time.time())
+        #print('looked for game', r.status_code)
         if r.status_code != 200:
             return
         if activeGameFound is False:
@@ -1356,7 +1345,7 @@ def testConnection(s):
         loadLevelsAndItems()
         return
     except Exception as e:
-        print('looked for game, failed', time.time())
+        #print('looked for game, failed', time.time())
         logging.debug('gc2 encountered (network)error in gamecheck' + str(e))
         if tries == 3:
             c.status.emit('')
@@ -1452,6 +1441,7 @@ def tpCD(spell):
     ret = (lvl - 1) * ((240 - 420) / 17) + 420
 
     return ret
+
 
 
 spellDatabase = {
@@ -1727,7 +1717,7 @@ def lookForUpdate():
         source = (sys.executable)
     elif __file__:
         source = (__file__)
-    print(source)
+    #print(source)
     dir = os.path.dirname(source)
     logging.debug('updater applicationpath: '+str(source))
     logging.debug('updater '+str(dir))
@@ -1896,7 +1886,7 @@ def findPort():
         return (str(2999))
     except:
         return(str(2999))
-version = 'v5.6.0' #!!!!!when you build
+version = 'v6.0.0' #!!!!!when you build
 port = '2999'
 if __name__ == '__main__':
     logging.debug('m0 overlay started, looking for port and files! (0/5 startup, 0/5 entire run)')
@@ -1947,11 +1937,11 @@ if __name__ == '__main__':
         msgBox.setIcon(QMessageBox.Question)
         msgBox.setText("TrackerOverlay "+newversion+" is available.\nDo you want to update?")
         msgBox.setWindowTitle("Update available")
-        msgBox.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+        msgBox.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
         r = msgBox.exec()
         if r == QMessageBox.Ok:
             #downloadNewVersion(url, updated)
-            download = DownLoadWidget(url,updated, newversion,notes)
+            download = DownLoadWidget(url, updated, newversion, notes)
             download.start()
             updating = True
     print('m2 update took', time.time()-t)
