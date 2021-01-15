@@ -1459,7 +1459,7 @@ def tpCD(spell):
 
 
 rawToEngNameDatabase = {
-    'GeneratedTip_SummonerSpell_Summoner^^Flash_DisplayName': 'Flash',
+    'GeneratedTip_SummonerSpell_SummonerFlash_DisplayName': 'Flash',
     'GeneratedTip_SummonerSpell_SummonerDot_DisplayName': 'Ignite',
     'GeneratedTip_SummonerSpell_SummonerExhaust_DisplayName': 'Exhaust',
     "GeneratedTip_SummonerSpell_SummonerTeleport_DisplayName": 'Teleport',
@@ -1937,7 +1937,7 @@ def findPort():
         return (str(2999))
 
 
-version = 'v6.1.1'  # !!!!!when you build
+version = 'v6.1.2'  # !!!!!when you build
 port = '2999'
 if __name__ == '__main__':
     logging.debug('m0 overlay started, looking for port and files! (0/5 startup, 0/5 entire run)')
