@@ -2,7 +2,6 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="6342dda4-3517-4eb4-94a3-430bffc1788b" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/TrackerOverlay.py" beforeDir="false" afterPath="$PROJECT_DIR$/TrackerOverlay.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -245,6 +244,7 @@
       <workItem from="1610311842070" duration="599000" />
       <workItem from="1610657751060" duration="7434000" />
       <workItem from="1610709840286" duration="11703000" />
+      <workItem from="1610738664823" duration="10000" />
     </task>
     <servers />
   </component>
@@ -309,11 +309,11 @@
       <screen x="1920" y="337" width="1920" height="1040" />
     </state>
     <state x="2381" y="499" key="SettingsEditor/0.0.1920.1040/1920.337.1920.1040@1920.337.1920.1040" timestamp="1609540012685" />
-    <state x="701" y="361" key="com.intellij.ide.util.TipDialog" timestamp="1610709842384">
-      <screen x="0" y="0" width="1920" height="1040" />
+    <state x="2621" y="698" key="com.intellij.ide.util.TipDialog" timestamp="1610738665005">
+      <screen x="1920" y="337" width="1920" height="1040" />
     </state>
     <state x="701" y="361" key="com.intellij.ide.util.TipDialog/0.0.1920.1040/1920.337.1920.1040@0.0.1920.1040" timestamp="1610709842384" />
-    <state x="2621" y="698" key="com.intellij.ide.util.TipDialog/0.0.1920.1040/1920.337.1920.1040@1920.337.1920.1040" timestamp="1609557508026" />
+    <state x="2621" y="698" key="com.intellij.ide.util.TipDialog/0.0.1920.1040/1920.337.1920.1040@1920.337.1920.1040" timestamp="1610738665005" />
     <state x="620" y="230" width="672" height="678" key="search.everywhere.popup" timestamp="1604154865300">
       <screen x="0" y="0" width="1920" height="1040" />
     </state>

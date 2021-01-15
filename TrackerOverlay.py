@@ -1937,7 +1937,7 @@ def findPort():
         return (str(2999))
 
 
-version = 'v6.1.0'  # !!!!!when you build
+version = 'v6.1.1'  # !!!!!when you build
 port = '2999'
 if __name__ == '__main__':
     logging.debug('m0 overlay started, looking for port and files! (0/5 startup, 0/5 entire run)')
@@ -1989,7 +1989,7 @@ if __name__ == '__main__':
         msgBox.setWindowTitle("Update available")
         msgBox.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
         r = msgBox.exec()
-        if r == QMessageBox.Ok:
+        if r == QMessageBox.Yes:
             # downloadNewVersion(url, updated)
             download = DownLoadWidget(url, updated, newversion, notes)
             download.start()
