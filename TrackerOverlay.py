@@ -1,10 +1,13 @@
 # TrackerOverlay.py
 import logging
 import os, sys
+
+
 class AppDataDir():
     def __init__(self):
         self.overlaydir = os.path.join(os.getenv('APPDATA'), "SummonerTrackerOverlay")
         self.jsondir = os.path.join(self.overlaydir, "CDragon")
+
 
 appdatadir = AppDataDir()
 
@@ -17,7 +20,6 @@ try:
 except FileExistsError:
     pass
 
-
 debugpath = os.path.join(appdatadir.overlaydir, "debug.log")
 logging.basicConfig(
     level=logging.DEBUG,
@@ -29,6 +31,7 @@ logging.basicConfig(
 )
 
 import time
+
 z = time.time()
 from PIL.ImageDraw import ImageDraw
 from PIL import Image, ImageEnhance, ImageDraw
@@ -52,8 +55,8 @@ import re
 import logging
 import shutil
 
+print('imorting modules took', time.time() - z)
 
-print('imorting modules took', time.time()-z)
 
 class Communicate(QObject):
     text = pyqtSignal(str)
@@ -225,10 +228,10 @@ class SetterWindow(QDialog):
         self.lastAction = time.time()
         self.move(int(width * 0.85), int(height * 0.2))
 
-        self.show() # this takes long
+        self.show()  # this takes long
 
         z = time.time()
-        try:#reading doesnt take long
+        try:  # reading doesnt take long
             with open(self.postxtfilepath) as f:
                 pos = f.read()
                 pos = pos.split(' ')
@@ -243,7 +246,7 @@ class SetterWindow(QDialog):
         self.cdtimer.timeout.connect(self.updateTimers)
         self.cdtimer.setInterval(1000)
         self.cdtimer.start()
-        print('setter window took',time.time()-t)
+        print('setter window took', time.time() - t)
 
     def updateTimers(self):
         for btn in self.spellButtons:
@@ -639,7 +642,7 @@ class InformationWindow(QDialog):
         self.setWindowIcon(icon)
         menu = QMenu()
         global version
-        l = QLabel('Version '+version)
+        l = QLabel('Version ' + version)
         label_action = QWidgetAction(self)
         label_action.setDefaultWidget(l)
         menu.addAction(label_action)
@@ -667,7 +670,6 @@ class InformationWindow(QDialog):
         c.helloInfo.connect(self.showHelloInfo)
 
         self.postxtfilepath = os.path.join(appdatadir.overlaydir, "pos.txt")
-
 
         trayIcon.setContextMenu(menu)
         trayIcon.show()
@@ -803,17 +805,17 @@ def calculateCD(spellObject):
     if isinstance(spellObject, UltSpell):
         lvl = str(dataholder.getLvL(spellObject.champion))
         cd = spellObject.cddir.get(lvl)
-        #fist calculate clouddrakes
+        # fist calculate clouddrakes
         cdr = dataholder.getclouddrakes()
         cd = cd * (1 - (cdr / 100.0))
-        #then abilityhaste though items
+        # then abilityhaste though items
         cdr = getItemUcdr(spellObject)
         cd = cd * (1 - (cdr / 100.0))
 
         logging.debug('st? calculate ultspell cd ' + str(cd))
         return cd
     else:
-        #cd of the spell
+        # cd of the spell
         cd = spellObject.cd
         if spellObject.spellname == 'tp':
             cd = tpCD(spellObject)
@@ -852,6 +854,7 @@ class SummonerSpell():
         self.champion = cham
         self.gametypecdr = gametypecdr
         if spellDatabase.get(spellname) is None:
+            spellname = 'Error'  # uses specific error entry
             logging.debug('     gc6 ssError spell ' + spellname + ' doesnt exist in database')
         self.spellname = spellDatabase.get(spellname).shortName
         self.cd = spellDatabase.get(spellname).cd
@@ -914,8 +917,8 @@ def showTrackEntrys():
                 btnindex = dataholder.buttons.get(id)
                 c.styleupButton.emit(btnindex)
     if len(show) > 0:
-        #pyperclip.copy(show) #cannot copy into league of legends chat directly
-        #print(pyperclip.paste())
+        # pyperclip.copy(show) #cannot copy into league of legends chat directly
+        # print(pyperclip.paste())
         show = gameTime.gameTimeMins + '\n\n' + show
     c.text.emit(show)
 
@@ -1066,7 +1069,8 @@ def sortTracks():  # called while thread is locked
 
 dataholder = Dataholder()
 
-#get summonerspellcdr
+
+# get summonerspellcdr
 def addBOOTS(summonerspell):
     items = dataholder.getItem(summonerspell.champion)
     if items is None:
@@ -1077,7 +1081,8 @@ def addBOOTS(summonerspell):
             return "BOOTS"
     return ""
 
-#get ult cdr
+
+# get ult cdr
 def getItemUcdr(ultspell):
     items = dataholder.getItem(ultspell.champion)
     # basecdr
@@ -1090,9 +1095,11 @@ def getItemUcdr(ultspell):
     ucdr = calcCDR(totalabilityhaste)
     return ucdr
 
+
 def calcCDR(haste):
-    cd = 100 * (1 - (1 /( 1+(haste/100))))
+    cd = 100 * (1 - (1 / (1 + (haste / 100))))
     return cd
+
 
 def updateAllUlts():
     allspells = {}
@@ -1116,7 +1123,7 @@ def loadLevelsAndItems():
     global port
     logging.debug('gc* ll0 attempting to load levels (0/1)')
     try:
-        r = requests.get("https://127.0.0.1:"+port+"/liveclientdata/allgamedata", verify=False)
+        r = requests.get("https://127.0.0.1:" + port + "/liveclientdata/allgamedata", verify=False)
     except Exception as e:
         logging.debug(str(e))
     j = json.loads(r.content)
@@ -1154,12 +1161,12 @@ def loadWithApi():
     logging.debug('gc3 loading with api')
     # api_connection_data = lcu.connect("D:/Program/RiotGames/LeagueOfLegends")
     try:
-        r = requests.get("https://127.0.0.1:"+port+"/liveclientdata/playerlist", verify=False)
+        r = requests.get("https://127.0.0.1:" + port + "/liveclientdata/playerlist", verify=False)
     except Exception as e:
         return None, None
-    activeplayer = requests.get("https://127.0.0.1:"+port+"/liveclientdata/activeplayername", verify=False)
+    activeplayer = requests.get("https://127.0.0.1:" + port + "/liveclientdata/activeplayername", verify=False)
     activeplayer = json.loads(activeplayer.content)
-    status = requests.get("https://127.0.0.1:"+port+"/liveclientdata/gamestats", verify=False)
+    status = requests.get("https://127.0.0.1:" + port + "/liveclientdata/gamestats", verify=False)
     gametype = json.loads(status.content).get("gameMode")
     if gametype != "ARAM":
         gametype = ""
@@ -1182,21 +1189,27 @@ def loadWithApi():
             name = player.get("summonerName", "")
             champ = player.get("championName", "")
             dataholder.addEnemy(name)
-            sp1 = player.get("summonerSpells").get("summonerSpellOne").get("displayName")
-            sp2 = player.get("summonerSpells").get("summonerSpellTwo").get("displayName")
+            sp1 = player.get("summonerSpells").get("summonerSpellOne").get("rawDisplayName")
+            sp2 = player.get("summonerSpells").get("summonerSpellTwo").get(
+                "rawDisplayName")  # use raw display name to be invariant towards language
+            sp1 = rawToEngNameDatabase.get(sp1)
+            sp2 = rawToEngNameDatabase.get(sp2)
+
+            if sp1 is None:
+                sp1 = 'Error'
+            if sp2 is None:
+                sp2 = 'Error'
 
             if sp2 == 'Flash':
-                temp = sp2
-                sp2 = sp1
-                sp1 = temp
+                sp1, sp2 = sp2, sp1
 
             sspellcdrType = gametype
             runes = player.get('runes')
-            runecdr = 0.0 # currently not used. No rune cdr on ult
+            runecdr = 0.0  # currently not used. No rune cdr on ult
             for rune in runes:
                 rune = runes.get(rune)
-                name = rune.get("displayName")
-                if name == "Inspiration":
+                id = rune.get("id")
+                if id == "8300":  # id of Inspiration Tree
                     sspellcdrType = sspellcdrType + "COS"
 
             print(name, sspellcdrType)
@@ -1255,7 +1268,7 @@ class Mqttclient():
     def connect(self, topicsuffix, clientIdSuffix):
         if topicsuffix is None:
             return
-        broker_address = "broker.hivemq.com"#"mqtt.eclipse.org"
+        broker_address = "broker.hivemq.com"  # "mqtt.eclipse.org"
         self.clientID = "observer" + clientIdSuffix
         self.topic = "SpellTracker2/Match" + topicsuffix
         client = mqtt.Client(self.clientID)
@@ -1296,17 +1309,20 @@ class Mqttclient():
 
 mqttclient = Mqttclient()
 import hashlib
+
+
 def hash(s):
     h = hashlib.md5(s.encode('utf-8')).hexdigest()
-    #print(h)
+    # print(h)
     return h
+
 
 def hashNames(li):
     li = sorted(li)
     con = ''
     for e in li:
         con = con + e
-    #print(con)
+    # print(con)
     h = hash(con)
     return h
 
@@ -1322,8 +1338,8 @@ def testConnection(s):
     logging.debug('gc1 trying to find game/ updating time and levels. game found :' + str(activeGameFound))
     global tries
     try:
-        r = s.get("https://127.0.0.1:"+port+"/liveclientdata/gamestats", verify=False)
-        #print('looked for game', r.status_code)
+        r = s.get("https://127.0.0.1:" + port + "/liveclientdata/gamestats", verify=False)
+        # print('looked for game', r.status_code)
         if r.status_code != 200:
             return
         if activeGameFound is False:
@@ -1345,7 +1361,7 @@ def testConnection(s):
         loadLevelsAndItems()
         return
     except Exception as e:
-        #print('looked for game, failed', time.time())
+        # print('looked for game, failed', time.time())
         logging.debug('gc2 encountered (network)error in gamecheck' + str(e))
         if tries == 3:
             c.status.emit('')
@@ -1421,12 +1437,11 @@ def loadHotkey():
         pass
     keyboard.add_hotkey(keys, reactToHotKey)
 
+
 def reactToHotKey():
     global activeGameFound
     if activeGameFound:
         c.hotkeyClicked.emit()
-
-
 
 
 def saveCurrentLogDate(path):
@@ -1443,8 +1458,27 @@ def tpCD(spell):
     return ret
 
 
+rawToEngNameDatabase = {
+    'GeneratedTip_SummonerSpell_Summoner^^Flash_DisplayName': 'Flash',
+    'GeneratedTip_SummonerSpell_SummonerDot_DisplayName': 'Ignite',
+    'GeneratedTip_SummonerSpell_SummonerExhaust_DisplayName': 'Exhaust',
+    "GeneratedTip_SummonerSpell_SummonerTeleport_DisplayName": 'Teleport',
+    'GeneratedTip_SummonerSpell_SummonerBarrier_DisplayName': 'Barrier',
+    'GeneratedTip_SummonerSpell_SummonerHeal_DisplayName': 'Heal',
+    'GeneratedTip_SummonerSpell_SummonerHaste_DisplayName': 'Ghost',
+    'GeneratedTip_SummonerSpell_SummonerBoost_DisplayName': 'Cleanse',
+    'GeneratedTip_SummonerSpell_SummonerMana_DisplayName': 'Clarity',
+    'GeneratedTip_SummonerSpell_SummonerSmite_DisplayName': 'Smite',
+    'GeneratedTip_SummonerSpell_S5_SummonerSmiteDuel_DisplayName': 'Challenging Smite',
+    'GeneratedTip_SummonerSpell_S5_SummonerSmitePlayerGanker_DisplayName': 'Chilling Smite',
+    'GeneratedTip_SummonerSpell_SummonerFlashPerksHextechFlashtraptionV2_DisplayName': 'HexFlash',
+    'GeneratedTip_SummonerSpell_SummonerSnowball_DisplayName': 'Mark',
+    '': 'Mark'
+}
 
 spellDatabase = {
+
+    # actual spells with timers. timers get updated though cdragon I think
     'Heal': Spell('h', 240, 'Heal'),
     'Ghost': Spell('ghost', 210, 'Ghost'),
     'Barrier': Spell('barr', 180, 'Barrier'),
@@ -1460,14 +1494,18 @@ spellDatabase = {
     'Dash': Spell('mark', 80, 'Mark'),
     'Challenging Smite': Spell('smite', 15, 'Smite'),
     'Chilling Smite': Spell('smite', 15, 'Smite'),
+    'Error': Spell('error', 0, 'nothing'),
+
+    #cannot be used with all language
     'Poro Toss': Spell('p-mark', 80, 'Poro Toss'),
     'Poro Dash': Spell('p-dash', 80, 'Poro Toss'),
     'To the King!': Spell('king', 10, 'To the King!'),
     'Resuscitate': Spell('rev', 100, 'Clarity'),
     'Warp': Spell('warp', 15, 'Teleport'),
 
+
     'ARAM': 70.0,
-    'ARAMCOS' : 85.0,
+    'ARAMCOS': 85.0,
     'ARAMBOOTS': 101.07,
     'ARAMCOSBOOTS': 122.4,
 
@@ -1640,7 +1678,7 @@ def readChampionIdsFromFile():
         return False
 
 
-def readSummonerSpellsFromFile():
+def readSummonerSpellsFromFile():  # reads summoner spell cooldowns from cdagon
     filepath = os.path.join(appdatadir.jsondir, "summoner-spells.json")
     try:
         with open(filepath) as json_file:
@@ -1710,52 +1748,54 @@ def loadItems():
         return False
 
 
-
-
 def lookForUpdate():
     if getattr(sys, 'frozen', False):
         source = (sys.executable)
     elif __file__:
         source = (__file__)
-    #print(source)
+    # print(source)
     dir = os.path.dirname(source)
-    logging.debug('updater applicationpath: '+str(source))
-    logging.debug('updater '+str(dir))
+    logging.debug('updater applicationpath: ' + str(source))
+    logging.debug('updater ' + str(dir))
     base = os.path.basename(source)
     base = base.split('.')
-    logging.debug('updater basename '+str(base[0]))
+    logging.debug('updater basename ' + str(base[0]))
     basenoupd = base[0].replace('Updated', '')
-    updated =  os.path.join(dir , base[0] + "Updated."+base[1])
-    logging.debug('updater updatedfile '+str(updated))
-    notupdated = os.path.join(dir , basenoupd+"."+base[1])
-    logging.debug('updater notupdatedfile '+str(notupdated))
+    updated = os.path.join(dir, base[0] + "Updated." + base[1])
+    logging.debug('updater updatedfile ' + str(updated))
+    notupdated = os.path.join(dir, basenoupd + "." + base[1])
+    logging.debug('updater notupdatedfile ' + str(notupdated))
     if str(base[0]).endswith("Updated"):
         logging.debug('update copy self to name without update')
-        shutil.copyfile(source,notupdated)
+        shutil.copyfile(source, notupdated)
         os.startfile(notupdated)
         sys.exit()
     else:
-        #delete if updated exists.
+        # delete if updated exists.
         downloadurl, newversion, notes = outdated()
-        if downloadurl is not None: # we are not up to date
+        if downloadurl is not None:  # we are not up to date
             return downloadurl, updated, newversion, notes
-        else: # we are up to date. check if updated exists.
+        else:  # we are up to date. check if updated exists.
             if os.path.exists(updated):
                 try:
                     print("updated version exists. will try to delete it")
-                    t4 = threading.Thread(name='deleteupdatedversion', target= lambda: delete(updated))
+                    t4 = threading.Thread(name='deleteupdatedversion', target=lambda: delete(updated))
                     t4.setDaemon(True)
                     t4.start()
                 except Exception as e:
-                    logging.debug('update error '+str(e))
+                    logging.debug('update error ' + str(e))
             return None, None, None, None
+
+
 def delete(updated):
     time.sleep(1)
     try:
-        os.unlink(updated) #!!!! build add this again
+        os.unlink(updated)  # !!!! build add this again
     except Exception as e:
         logging.debug("no 'update' file found")
     logging.debug('update erased unesesarry updated version')
+
+
 def outdated():
     try:
         r = requests.get("https://api.github.com/repos/CodeIsJustLikeMagic/SummonerTrackerOverlay/releases/latest",
@@ -1766,7 +1806,7 @@ def outdated():
     tagName = j.get('tag_name')
     global version
     if tagName == version:
-        return None,None,None
+        return None, None, None
     else:
         # visit github to get the latest release
         # https://github.com/CodeIsJustLikeMagic/SummonerTrackerOverlay/releases/latest
@@ -1785,8 +1825,11 @@ class ScrollLabel(QScrollArea):
         self.label.setAlignment(Qt.AlignLeft | Qt.AlignTop)
         self.label.setWordWrap(True)
         lay.addWidget(self.label)
+
     def setText(self, text):
         self.label.setText(text)
+
+
 class DownLoadWidget(QWidget):
     def __init__(self, downloadUrl, filepath, newversion, notes):
         super().__init__()
@@ -1794,14 +1837,14 @@ class DownLoadWidget(QWidget):
         self.setWindowTitle("Updating...")
         icon = QIcon(resource_path('./assets/trackerIcon.xpm'))
         self.setWindowIcon(icon)
-        self.label = QLabel("Update to TrackerOverlay "+newversion +"\n")
+        self.label = QLabel("Update to TrackerOverlay " + newversion + "\n")
         self.label.setStyleSheet('font-size: 10pt')
         layout.addWidget(self.label)
         self.notes = ScrollLabel()
         self.notes.setText(notes)
-        self.resize(100,300)
+        self.resize(100, 300)
         layout.addWidget(self.notes)
-        self.progressBar = QProgressBar(self,minimumWidth = 400)
+        self.progressBar = QProgressBar(self, minimumWidth=400)
         self.progressBar.setValue(0)
         layout.addWidget(self.progressBar)
         self.url = downloadUrl
@@ -1810,6 +1853,7 @@ class DownLoadWidget(QWidget):
         self.move(centerPoint)
 
         self.show()
+
     def start(self):
         filesize = requests.get(url, stream=True).headers['Content-Length']
         fileobject = open(self.filepath, 'wb')
@@ -1838,10 +1882,10 @@ class DownLoadWidget(QWidget):
 
 
 #################################################################
-#Download thread
+# Download thread
 ##################################################################
 class downloadThread(QThread):
-    download_proess_signal = pyqtSignal(int)                        #Create signal
+    download_proess_signal = pyqtSignal(int)  # Create signal
 
     def __init__(self, url, filesize, fileobj, buffer):
         super(downloadThread, self).__init__()
@@ -1850,25 +1894,28 @@ class downloadThread(QThread):
         self.fileobj = fileobj
         self.buffer = buffer
 
-
     def run(self):
         try:
-            rsp = requests.get(self.url, stream=True)                #Streaming download mode
+            rsp = requests.get(self.url, stream=True)  # Streaming download mode
             offset = 0
             for chunk in rsp.iter_content(chunk_size=self.buffer):
                 if not chunk: break
-                self.fileobj.seek(offset)                            #Setting Pointer Position
-                self.fileobj.write(chunk)                            #write file
+                self.fileobj.seek(offset)  # Setting Pointer Position
+                self.fileobj.write(chunk)  # write file
                 offset = offset + len(chunk)
                 proess = offset / int(self.filesize) * 100
-                self.download_proess_signal.emit(int(proess))        #Sending signal
+                self.download_proess_signal.emit(int(proess))  # Sending signal
             #######################################################################
-            self.fileobj.close()    #Close file
-            self.exit(0)            #Close thread
+            self.fileobj.close()  # Close file
+            self.exit(0)  # Close thread
 
         except Exception as e:
             print(e)
+
+
 import psutil
+
+
 def findProcessID():
     for process in psutil.process_iter():
         try:
@@ -1876,17 +1923,21 @@ def findProcessID():
                 return process
         except:
             pass
+
+
 def findPort():
     try:
         p = findProcessID()
         for x in p.connections():
             if x.status == psutil.CONN_LISTEN:
                 a = x.laddr
-                return(str(a[1]))
+                return (str(a[1]))
         return (str(2999))
     except:
-        return(str(2999))
-version = 'v6.0.0' #!!!!!when you build
+        return (str(2999))
+
+
+version = 'v6.1.0'  # !!!!!when you build
 port = '2999'
 if __name__ == '__main__':
     logging.debug('m0 overlay started, looking for port and files! (0/5 startup, 0/5 entire run)')
@@ -1920,9 +1971,8 @@ if __name__ == '__main__':
         f.close()
         updateCDragon()
 
-
     logging.debug('m1 Looking for Update')
-    print('m1 port and files took', time.time()-t)
+    print('m1 port and files took', time.time() - t)
     t = time.time()
     app = QApplication([])
     myappid = 'summonerTrackerOverlay'  # arbitrary string
@@ -1935,16 +1985,16 @@ if __name__ == '__main__':
         icon = QIcon(resource_path('./assets/trackerIcon.xpm'))
         msgBox.setWindowIcon(icon)
         msgBox.setIcon(QMessageBox.Question)
-        msgBox.setText("TrackerOverlay "+newversion+" is available.\nDo you want to update?")
+        msgBox.setText("TrackerOverlay " + newversion + " is available.\nDo you want to update?")
         msgBox.setWindowTitle("Update available")
         msgBox.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
         r = msgBox.exec()
         if r == QMessageBox.Ok:
-            #downloadNewVersion(url, updated)
+            # downloadNewVersion(url, updated)
             download = DownLoadWidget(url, updated, newversion, notes)
             download.start()
             updating = True
-    print('m2 update took', time.time()-t)
+    print('m2 update took', time.time() - t)
     t = time.time()
     logging.debug('m2 starting windows')
     if not updating:
@@ -1954,7 +2004,7 @@ if __name__ == '__main__':
         width, height = screen_resolution.width(), screen_resolution.height()
         setterWindow = SetterWindow(width, height)
         window = InformationWindow(width, height)
-        print('creating windows took', time.time()-t)
-        print('all in all', time.time()-s)
+        print('creating windows took', time.time() - t)
+        print('all in all', time.time() - s)
         startThreads()
     app.exec_()
