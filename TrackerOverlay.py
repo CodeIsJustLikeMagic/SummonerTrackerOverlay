@@ -1,4 +1,33 @@
 # TrackerOverlay.py
+import logging
+import os, sys
+class AppDataDir():
+    def __init__(self):
+        self.overlaydir = os.path.join(os.getenv('APPDATA'), "SummonerTrackerOverlay")
+        self.jsondir = os.path.join(self.overlaydir, "CDragon")
+
+appdatadir = AppDataDir()
+
+try:
+    os.mkdir(appdatadir.overlaydir)
+except FileExistsError:
+    pass
+try:
+    os.mkdir(appdatadir.jsondir)
+except FileExistsError:
+    pass
+
+
+debugpath = os.path.join(appdatadir.overlaydir, "debug.log")
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[
+        logging.FileHandler(debugpath),
+        logging.StreamHandler()
+    ]
+)
+
 import time
 z = time.time()
 from PIL.ImageDraw import ImageDraw
@@ -12,7 +41,7 @@ from PyQt5.QtCore import Qt, pyqtSignal, QObject, QTimer, QThread
 import paho.mqtt.client as mqtt
 import threading
 from numpy import unicode
-import os, sys
+
 import requests
 import json
 
@@ -23,6 +52,7 @@ import keyboard
 import re
 import logging
 import shutil
+
 
 print('imorting modules took', time.time()-z)
 
@@ -194,7 +224,7 @@ class SetterWindow(QDialog):
         c.toogleShow.connect(lambda: self.toogleShow())
         c.updateTimers.connect(self.updateTimers)
         self.lastAction = time.time()
-        self.move(width * 0.85, height * 0.2)
+        self.move(int(width * 0.85), int(height * 0.2))
 
         self.show() # this takes long
 
@@ -646,7 +676,7 @@ class InformationWindow(QDialog):
         self.timer.timeout.connect(self.clearStatus)
         self.timer.setSingleShot(True)
 
-        self.move(width * 0.0, height * 0.5)
+        self.move(int(width * 0.0), int(height * 0.5))
 
         self.show()
         try:
@@ -885,6 +915,8 @@ def showTrackEntrys():
                 btnindex = dataholder.buttons.get(id)
                 c.styleupButton.emit(btnindex)
     if len(show) > 0:
+        #pyperclip.copy(show) #cannot copy into league of legends chat directly
+        #print(pyperclip.paste())
         show = gameTime.gameTimeMins + '\n\n' + show
     c.text.emit(show)
 
@@ -1405,12 +1437,7 @@ def reactToHotKey():
     if activeGameFound:
         c.hotkeyClicked.emit()
 
-class AppDataDir():
-    def __init__(self):
-        self.overlaydir = os.path.join(os.getenv('APPDATA'), "SummonerTrackerOverlay")
-        self.jsondir = os.path.join(self.overlaydir, "CDragon")
 
-appdatadir = AppDataDir()
 
 
 def saveCurrentLogDate(path):
@@ -1484,11 +1511,11 @@ def updateCDragon():
     deleteOldDragonData()
     logging.debug('m? ucd1 updating game data with community dragon')
     updateSummonSpellJson()
-    updateChampionIds()
-    updateItems()
+    cdragonupdateChampionIds()
+    cdragonupdateItems()
 
 
-def updateSummonerIcon(name, iconPath):
+def cdragonupdateSummonerIcon(name, iconPath):
     if len(name) == 0:
         return
     name.lower()
@@ -1523,7 +1550,7 @@ def loadUlt(chamName):
     chamNum = dataholder.getChampionIds(chamName)
     ret = loadUltFromFile(chamNum)
     if ret == None:
-        updateUltJson(chamNum)
+        cdragonupdateUltJson(chamNum)
         return loadUltFromFile(chamNum)
     else:
         return ret
@@ -1540,7 +1567,7 @@ def loadUltFromFile(champNum):
         return None
 
 
-def updateUltJson(champNum):
+def cdragonupdateUltJson(champNum):
     logging.debug('m? ucd1 updating summonerspell cd and icons')
     try:
         r = requests.get(
@@ -1586,14 +1613,14 @@ def updateSummonSpellJson():
         # find spell image and save it
         name = spell.get('name')
         iconPath = spell.get('iconPath')
-        updateSummonerIcon(name, iconPath)
+        cdragonupdateSummonerIcon(name, iconPath)
     filepath = os.path.join(appdatadir.jsondir, "summoner-spells.json")
     with open(filepath, 'w') as outfile:
         json.dump(j, outfile)
     logging.debug('m? ucd2 updating summonerspell cd and icons success')
 
 
-def updateChampionIds():
+def cdragonupdateChampionIds():
     try:
         r = requests.get(
             "http://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/champion-summary.json",
@@ -1643,7 +1670,7 @@ def readSummonerSpellsFromFile():
         return False
 
 
-def ultcd(champId):
+def cdragonultcd(champId):
     try:
         r = requests.get(
             "https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/champions/101.json",
@@ -1653,7 +1680,7 @@ def ultcd(champId):
     j = json.loads(r.content)
 
 
-def updateItems():
+def cdragonupdateItems():
     try:
         r = requests.get(
             "http://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/items.json",
@@ -1723,16 +1750,21 @@ def lookForUpdate():
         if downloadurl is not None: # we are not up to date
             return downloadurl, updated, newversion, notes
         else: # we are up to date. check if updated exists.
-            try:
-                t4 = threading.Thread(name='deleteupdatedversion', target= lambda: delete(updated))
-                t4.setDaemon(True)
-                t4.start()
-            except Exception as e:
-                logging.debug('update error '+str(e))
+            if os.path.exists(updated):
+                try:
+                    print("updated version exists. will try to delete it")
+                    t4 = threading.Thread(name='deleteupdatedversion', target= lambda: delete(updated))
+                    t4.setDaemon(True)
+                    t4.start()
+                except Exception as e:
+                    logging.debug('update error '+str(e))
             return None, None, None, None
 def delete(updated):
     time.sleep(1)
-    os.unlink(updated) #!!!! build add this again
+    try:
+        os.unlink(updated) #!!!! build add this again
+    except Exception as e:
+        logging.debug("no 'update' file found")
     logging.debug('update erased unesesarry updated version')
 def outdated():
     try:
@@ -1800,9 +1832,9 @@ class DownLoadWidget(QWidget):
         self.progressBar.setValue(value)
         if value == 100:
             logging.debug('update downloaded updated version')
-            self.startUpdatedVersion();
+            self.startUpdatedVersion()
             time.sleep(0.5)
-            self.startUpdatedVersion();
+            self.startUpdatedVersion()
 
     def startUpdatedVersion(self):
         try:
@@ -1871,18 +1903,10 @@ if __name__ == '__main__':
     t = time.time()
     s = t
     print('m0', t)
-    try:
-        os.mkdir(appdatadir.overlaydir)
-    except FileExistsError:
-        pass
-    try:
-        os.mkdir(appdatadir.jsondir)
-    except FileExistsError:
-        pass
-    debugpath = os.path.join(appdatadir.overlaydir, "debug.log")
+
     logStartPath = os.path.join(appdatadir.overlaydir, "startLogdate.txt")
     z = time.time()
-    try:# this is quick
+    try:
         with open(logStartPath) as f:
 
             logStartDate = f.read()
@@ -1905,17 +1929,10 @@ if __name__ == '__main__':
         f.write('')
         f.close()
         updateCDragon()
-    logging.basicConfig(
-        level=logging.DEBUG,
-        format="%(asctime)s [%(levelname)s] %(message)s",
-        handlers=[
-            logging.FileHandler(debugpath),
-            logging.StreamHandler()
-        ]
-    )
+
 
     logging.debug('m1 Looking for Update')
-    print('m1 port anf files took', time.time()-t)
+    print('m1 port and files took', time.time()-t)
     t = time.time()
     app = QApplication([])
     myappid = 'summonerTrackerOverlay'  # arbitrary string
