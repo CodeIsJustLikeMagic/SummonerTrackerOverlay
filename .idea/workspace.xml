@@ -2,7 +2,10 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="6342dda4-3517-4eb4-94a3-430bffc1788b" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/SummonerTrackerClientP.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/SummonerTrackerClientP.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/TrackerOverlay.py" beforeDir="false" afterPath="$PROJECT_DIR$/TrackerOverlay.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -23,10 +26,10 @@
   <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
-    <option name="showExcludedFiles" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
   <component name="PropertiesComponent">
+    <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
     <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
     <property name="WebServerToolWindowFactoryState" value="false" />
@@ -174,6 +177,7 @@
       </list>
     </recent_temporary>
   </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="project-level" UseSingleDictionary="true" transferred="true" />
   <component name="SvnConfiguration">
     <configuration />
   </component>
@@ -258,68 +262,12 @@
       <map>
         <entry key="MAIN">
           <value>
-            <State>
-              <option name="COLUMN_ORDER" />
-            </State>
+            <State />
           </value>
         </entry>
       </map>
     </option>
-  </component>
-  <component name="WindowStateProjectService">
-    <state width="1577" height="76" key="GridCell.Tab.0.bottom" timestamp="1610750309389">
-      <screen x="0" y="0" width="1920" height="1040" />
-    </state>
-    <state width="1577" height="76" key="GridCell.Tab.0.bottom/0.0.1920.1040/1920.337.1920.1040@0.0.1920.1040" timestamp="1610750309389" />
-    <state width="1577" height="343" key="GridCell.Tab.0.bottom/0.0.1920.1040/1920.337.1920.1040@1920.337.1920.1040" timestamp="1610741130816" />
-    <state width="1577" height="76" key="GridCell.Tab.0.center" timestamp="1610750309389">
-      <screen x="0" y="0" width="1920" height="1040" />
-    </state>
-    <state width="1577" height="76" key="GridCell.Tab.0.center/0.0.1920.1040/1920.337.1920.1040@0.0.1920.1040" timestamp="1610750309389" />
-    <state width="1577" height="343" key="GridCell.Tab.0.center/0.0.1920.1040/1920.337.1920.1040@1920.337.1920.1040" timestamp="1610741130816" />
-    <state width="1577" height="76" key="GridCell.Tab.0.left" timestamp="1610750309389">
-      <screen x="0" y="0" width="1920" height="1040" />
-    </state>
-    <state width="1577" height="76" key="GridCell.Tab.0.left/0.0.1920.1040/1920.337.1920.1040@0.0.1920.1040" timestamp="1610750309389" />
-    <state width="1577" height="343" key="GridCell.Tab.0.left/0.0.1920.1040/1920.337.1920.1040@1920.337.1920.1040" timestamp="1610741130816" />
-    <state width="1577" height="76" key="GridCell.Tab.0.right" timestamp="1610750309389">
-      <screen x="0" y="0" width="1920" height="1040" />
-    </state>
-    <state width="1577" height="76" key="GridCell.Tab.0.right/0.0.1920.1040/1920.337.1920.1040@0.0.1920.1040" timestamp="1610750309389" />
-    <state width="1577" height="343" key="GridCell.Tab.0.right/0.0.1920.1040/1920.337.1920.1040@1920.337.1920.1040" timestamp="1610741130816" />
-    <state width="1577" height="343" key="GridCell.Tab.1.bottom" timestamp="1610750309385">
-      <screen x="0" y="0" width="1920" height="1040" />
-    </state>
-    <state width="1577" height="343" key="GridCell.Tab.1.bottom/0.0.1920.1040/1920.337.1920.1040@0.0.1920.1040" timestamp="1610750309385" />
-    <state width="1577" height="343" key="GridCell.Tab.1.bottom/0.0.1920.1040/1920.337.1920.1040@1920.337.1920.1040" timestamp="1610741130817" />
-    <state width="1577" height="343" key="GridCell.Tab.1.center" timestamp="1610750309385">
-      <screen x="0" y="0" width="1920" height="1040" />
-    </state>
-    <state width="1577" height="343" key="GridCell.Tab.1.center/0.0.1920.1040/1920.337.1920.1040@0.0.1920.1040" timestamp="1610750309385" />
-    <state width="1577" height="343" key="GridCell.Tab.1.center/0.0.1920.1040/1920.337.1920.1040@1920.337.1920.1040" timestamp="1610741130816" />
-    <state width="1577" height="343" key="GridCell.Tab.1.left" timestamp="1610750309385">
-      <screen x="0" y="0" width="1920" height="1040" />
-    </state>
-    <state width="1577" height="343" key="GridCell.Tab.1.left/0.0.1920.1040/1920.337.1920.1040@0.0.1920.1040" timestamp="1610750309385" />
-    <state width="1577" height="343" key="GridCell.Tab.1.left/0.0.1920.1040/1920.337.1920.1040@1920.337.1920.1040" timestamp="1610741130816" />
-    <state width="1577" height="343" key="GridCell.Tab.1.right" timestamp="1610750309385">
-      <screen x="0" y="0" width="1920" height="1040" />
-    </state>
-    <state width="1577" height="343" key="GridCell.Tab.1.right/0.0.1920.1040/1920.337.1920.1040@0.0.1920.1040" timestamp="1610750309385" />
-    <state width="1577" height="343" key="GridCell.Tab.1.right/0.0.1920.1040/1920.337.1920.1040@1920.337.1920.1040" timestamp="1610741130816" />
-    <state x="2381" y="499" key="SettingsEditor" timestamp="1609540012685">
-      <screen x="1920" y="337" width="1920" height="1040" />
-    </state>
-    <state x="2381" y="499" key="SettingsEditor/0.0.1920.1040/1920.337.1920.1040@1920.337.1920.1040" timestamp="1609540012685" />
-    <state x="701" y="361" key="com.intellij.ide.util.TipDialog" timestamp="1612102926880">
-      <screen x="0" y="0" width="1920" height="1040" />
-    </state>
-    <state x="701" y="361" key="com.intellij.ide.util.TipDialog/0.0.1920.1040/1920.337.1920.1040@0.0.1920.1040" timestamp="1612102926880" />
-    <state x="2621" y="698" key="com.intellij.ide.util.TipDialog/0.0.1920.1040/1920.337.1920.1040@1920.337.1920.1040" timestamp="1610740910243" />
-    <state x="620" y="230" width="672" height="678" key="search.everywhere.popup" timestamp="1604154865300">
-      <screen x="0" y="0" width="1920" height="1040" />
-    </state>
-    <state x="620" y="230" width="672" height="678" key="search.everywhere.popup/0.0.1920.1040/1920.337.1920.1040@0.0.1920.1040" timestamp="1604154865300" />
+    <option name="oldMeFiltersMigrated" value="true" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -328,6 +276,26 @@
           <url>file://$PROJECT_DIR$/TrackerOverlay.py</url>
           <line>1314</line>
           <option name="timeStamp" value="9" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/TrackerOverlay.py</url>
+          <line>1184</line>
+          <option name="timeStamp" value="13" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/TrackerOverlay.py</url>
+          <line>1239</line>
+          <option name="timeStamp" value="14" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/TrackerOverlay.py</url>
+          <line>1224</line>
+          <option name="timeStamp" value="15" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/TrackerOverlay.py</url>
+          <line>1233</line>
+          <option name="timeStamp" value="16" />
         </line-breakpoint>
       </breakpoints>
       <default-breakpoints>
@@ -338,10 +306,5 @@
         </breakpoint>
       </default-breakpoints>
     </breakpoint-manager>
-  </component>
-  <component name="com.intellij.coverage.CoverageDataManagerImpl">
-    <SUITE FILE_PATH="coverage/SummonerTrackerClientP$TrackerOverlay__1_.coverage" NAME="TrackerOverlay (1) Coverage Results" MODIFIED="1610741130802" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
-    <SUITE FILE_PATH="coverage/SummonerTrackerClientP$TrackerFullscreen.coverage" NAME="TrackerFullscreen Coverage Results" MODIFIED="1610667044568" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
-    <SUITE FILE_PATH="coverage/SummonerTrackerClientP$TrackerOverlay.coverage" NAME="TrackerOverlay Coverage Results" MODIFIED="1604156127694" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
   </component>
 </project>

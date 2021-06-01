@@ -1576,6 +1576,12 @@ def cdragonupdateSummonerIcon(name, iconPath):
 
 def loadUlt(chamName):
     chamNum = dataholder.getChampionIds(chamName)
+    if chamNum is None:
+        logging.debug(f'{chamName} does not have a chamNum. Updating CDragon')
+        updateCDragon()
+        initCDragon() # read newly found data from files
+        chamNum = dataholder.getChampionIds(chamName)
+        logging.debug(f'found {chamNum} for {chamName} after updateCDragon')
     ret = loadUltFromFile(chamNum)
     if ret == None:
         cdragonupdateUltJson(chamNum)
@@ -1596,19 +1602,21 @@ def loadUltFromFile(champNum):
 
 
 def cdragonupdateUltJson(champNum):
-    logging.debug('m? ucd1 updating summonerspell cd and icons')
+    logging.debug('m? ucd1 updating summonerspell cd and icons for champNum: '+str(champNum))
     try:
         r = requests.get(
             "http://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/champions/" + str(
                 champNum) + ".json",
             verify=False)
+        j = json.loads(r.content)
+        spellList = j.get('spells')
+        ultspell = spellList[len(spellList) - 1]
+        basecd = ultspell.get('cooldownCoefficients')
+
     except Exception as e:
         logging.debug('m? ucdError ' + e)
-        return
-    j = json.loads(r.content)
-    spellList = j.get('spells')
-    ultspell = spellList[len(spellList) - 1]
-    basecd = ultspell.get('cooldownCoefficients')
+        basecd = [0,0,0]
+
     lvl6 = basecd[0]
     lvl11 = basecd[1]
     lvl16 = basecd[2]
@@ -1937,7 +1945,7 @@ def findPort():
         return (str(2999))
 
 
-version = 'v6.1.2'  # !!!!!when you build
+version = 'v6.2.0'  # !!!!!when you build
 port = '2999'
 if __name__ == '__main__':
     logging.debug('m0 overlay started, looking for port and files! (0/5 startup, 0/5 entire run)')
