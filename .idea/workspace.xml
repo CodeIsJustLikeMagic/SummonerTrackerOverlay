@@ -2,10 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="6342dda4-3517-4eb4-94a3-430bffc1788b" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/SummonerTrackerClientP.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/SummonerTrackerClientP.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/TrackerOverlay.py" beforeDir="false" afterPath="$PROJECT_DIR$/TrackerOverlay.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
