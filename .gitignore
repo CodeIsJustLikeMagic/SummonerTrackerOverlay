@@ -1,3 +1,8 @@
 
 TrackerScreenshot1.PNG
 testjsons
+*/.idea/workspace.xml
+*/.idea/tasks.xml
+__pychache__/
+*.pyc
+venv
