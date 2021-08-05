@@ -14,9 +14,9 @@ How to use it
 * The summoner spell buttons will assume that the spell has been used 7 seconds ago. 
 * The "-30 sec" Buttons will Modify existing Timers by subtracting 30 seconds.
 * To remove a spell timer press the button again.
-* "reload" will update the positions of the Champions in the Setter Window according to the in game scoreboard.
+* "reload" will update the positions of the Champions in the Setter Window according to the in game scoreboard. Meaning you can rearrange the scoreboard in game and then "reload" to copy the new positions.
 
-If another summoner on your team uses the overlay as well you will share information with each other.
+**If another summoner on your team uses the overlay as well you will share information with each other.**
 
 When you start the overlay it will create a tray icon (next to the time and date in the windows tool bar).
 From there you can move the Information Display Window and the Setter Window and set your prefered hotkey (examples include: ^; space; shift+s). 
@@ -47,12 +47,14 @@ How it works
 
 Legal Stuff
 --------
-This project isn't endorsed by Riot Games and doesn't reflect the views or opinions of Riot Games or anyone officially involved in producing or managing League of Legends.
 
-Similar Applications intended for Tracking Summoners were reviewed and verfied by Riot.
-E.g.: 
+The SummonerTracker has been reviewed and approved through the riot developer portal.
+
+![image](https://user-images.githubusercontent.com/25256413/128340012-5537e164-a7ef-48a0-adc4-5a1156bb5a61.png)
+
+Other Similar Applications (also reviewed and verified): 
 * [LOL Tracker](https://www.loltracker.gg/)
 * [Summoner](/github.com/4dams/Summoner)
-* every Summoner Tracker in the Apple Store and the Google Play Store ([Flash Track](http://flashtrack.webflow.io/), [Summoner Tracker for LoL](https://play.google.com/store/apps/details?id=com.at.factory.summonertrackerapp&hl=de)) according to Riots [Legal Jibber Jabber](https://www.riotgames.com/en/legal) Paragraph 3.
+* [Flash Track](http://flashtrack.webflow.io/)
 
 Please note that all of these trackers are inferior to mine because they don't share information with teammates ;)
