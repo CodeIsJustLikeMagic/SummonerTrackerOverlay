@@ -56,5 +56,3 @@ Other Similar Applications (also reviewed and verified):
 * [LOL Tracker](https://www.loltracker.gg/)
 * [Summoner](/github.com/4dams/Summoner)
 * [Flash Track](http://flashtrack.webflow.io/)
-
-Please note that all of these trackers are inferior to mine because they don't share information with teammates ;)
